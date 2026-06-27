@@ -443,6 +443,7 @@ let SCORES = JSON.parse(JSON.stringify(DEFAULT));
 let PICKS = {};
 let CUR = null;
 let ODDS = null;
+let LIVE = { J:[{},{}], K:[{},{}], L:[{},{}] };   // {state,minute} por jogo (preenchido pelo ESPN)
 let VIEW = "prob";   // "prob" = probabilidades pré-jogo · "result" = adversário com o resultado atual
 
 const LS_KEY="mundial2026:v2";
@@ -493,12 +494,34 @@ function koTs(G){ return Date.parse(KICKOFF[G]); }
 function koLabel(G){ return new Date(koTs(G)).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}); }
 function groupsByKickoff(){ return "JKL".split("").sort((a,b)=>koTs(a)-koTs(b)); }
 function eloRating(t){ const r=Math.min(frank(t),40); return (40-r)*25; }
-function outcomeProbs(h,a){  // [P(casa vence), P(empate), P(fora vence)]
+// Modelo de golos (Poisson) — base para a distribuição de resultados, tanto
+// pré-jogo (jogo inteiro a partir de 0-0) como ao vivo (tempo restante a
+// partir do placar atual).
+function fullLambdas(h,a){            // golos esperados de cada equipa num jogo inteiro
   const Eh=1/(1+Math.pow(10,(eloRating(a)-eloRating(h))/400));
-  let pd=0.27*(1-Math.abs(2*Eh-1));         // empate mais provável quando estão equilibradas
-  let pwh=Eh-pd/2, pwa=(1-Eh)-pd/2;
-  if(pwh<0){pd+=pwh;pwh=0;} if(pwa<0){pd+=pwa;pwa=0;}
-  const s=pwh+pd+pwa||1; return [pwh/s, pd/s, pwa/s];
+  const diff=2*Eh-1, base=1.35;      // ~2.7 golos/jogo, repartidos pela força relativa
+  return [base*(1+0.55*diff), base*(1-0.55*diff)];
+}
+function poissonVec(lam,n){           // [P(0), P(1), …, P(n)] golos adicionais
+  const out=[]; let p=Math.exp(-lam);
+  for(let k=0;k<=n;k++){ out.push(p); p=p*lam/(k+1); }
+  return out;
+}
+// Lista de finais plausíveis de um jogo, com peso, conforme o seu estado:
+//  pre  → jogo inteiro a partir de 0-0
+//  in   → só o tempo que falta, somado ao placar atual (0-0 ao 30' mantém vivos 1-0, 0-1, 1-1…)
+//  post → resultado final congelado
+function gameOutcomes(g){
+  const cur = g.state==="pre" ? [0,0] : g.score;
+  const f = g.state==="pre" ? 1 : (g.state==="post" ? 0 : Math.max((90-g.minute)/90, 0.02));
+  if(f<=0.005) return [{s:cur.slice(), w:1}];
+  let [lh,la]=fullLambdas(g.h,g.a); lh*=f; la*=f;
+  const N=6, ph=poissonVec(lh,N), pa=poissonVec(la,N);
+  let out=[];
+  for(let i=0;i<=N;i++) for(let j=0;j<=N;j++){ const w=ph[i]*pa[j]; if(w<1e-4) continue; out.push({s:[cur[0]+i,cur[1]+j], w}); }
+  out.sort((x,y)=>y.w-x.w); if(out.length>14) out.length=14;
+  const tot=out.reduce((s,o)=>s+o.w,0)||1; out.forEach(o=>o.w/=tot);
+  return out;
 }
 function r32OppName(src, W){  // nome do adversário de 'src' (ex.: "W:J") nos 16-avos, no mundo W
   const p=src.split(":"), k=p[0], v=p[1];
@@ -514,27 +537,37 @@ function teamOppInWorld(team,G,W){  // adversário nos 16-avos (ou "__OUT__" se 
   if(pos===2){ if(W.qual.includes(G)){ const slot=W.oppOf[G]; return slot?gWin(slot.slice(1),W):null; } return "__OUT__"; }
   return "__OUT__";
 }
-// Distribuição de adversários por equipa: condiciona nos jogos já começados (hora >= início, com o placar atual),
-// e enumera os restantes ponderando cada resultado pelo ranking FIFA.
+// Distribuição de adversários por equipa. Cada jogo contribui com a sua lista de
+// finais plausíveis (gameOutcomes), que evolui com o minuto/placar em direto.
+// Enumeramos a combinação dos jogos com poda por peso (beam) para não explodir.
 function opponentDistribution(){
-  const now=Date.now();
-  const games=[]; for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++){ const pr=GROUPS[G].rem[mi]; games.push({G,mi,h:pr[0],a:pr[1], started: now>=koTs(G)}); }
-  const base={J:[null,null],K:[null,null],L:[null,null]};
-  for(const g of games) if(g.started) base[g.G][g.mi]=SCORES[g.G][g.mi].slice();
-  const variable=games.filter(g=>!g.started);
-  const probs=variable.map(g=>outcomeProbs(g.h,g.a));
-  const scoreFor=[[1,0],[1,1],[0,1]];
+  const games=[];
+  for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++){
+    const pr=GROUPS[G].rem[mi]; const lv=(LIVE[G]&&LIVE[G][mi])||{};
+    const state=lv.state || (Date.now()>=koTs(G) ? "in" : "pre");   // sem ESPN, decide pela hora
+    games.push({G,mi,h:pr[0],a:pr[1], state, minute:lv.minute||0, score:SCORES[G][mi].slice()});
+  }
+  const outs=games.map(gameOutcomes);
+  const PRUNE=1e-5, MAXSC=4000;
+  let scen=[{rem:{J:[null,null],K:[null,null],L:[null,null]}, w:1}];
+  for(let gi=0; gi<games.length; gi++){
+    const g=games[gi], ol=outs[gi], next=[];
+    for(const s of scen) for(const o of ol){
+      const w=s.w*o.w; if(w<PRUNE) continue;
+      const rem=JSON.parse(JSON.stringify(s.rem)); rem[g.G][g.mi]=o.s.slice();
+      next.push({rem, w});
+    }
+    if(next.length>MAXSC){ next.sort((a,b)=>b.w-a.w); next.length=MAXSC; }
+    scen=next;
+  }
   const dist={};
   for(const G of "JKL".split("")) for(const t of GROUPS[G].teams) dist[t]=new Map();
-  const k=variable.length, combos=Math.pow(3,k); let totalW=0;
-  for(let mask=0; mask<combos; mask++){
-    let w=1,m=mask; const rem=JSON.parse(JSON.stringify(base));
-    for(let i=0;i<k;i++){ const o=m%3; m=(m-o)/3; w*=probs[i][o]; const g=variable[i]; rem[g.G][g.mi]=scoreFor[o]; }
-    if(w<=0) continue;
-    const W=computeWorld(rem); totalW+=w;
+  let totalW=0;
+  for(const s of scen){
+    const W=computeWorld(s.rem); totalW+=s.w;
     for(const G of "JKL".split("")) for(const t of GROUPS[G].teams){
       const opp=teamOppInWorld(t,G,W); const kk = opp==null ? "__TBD__" : opp;
-      dist[t].set(kk, (dist[t].get(kk)||0)+w);
+      dist[t].set(kk, (dist[t].get(kk)||0)+s.w);
     }
   }
   for(const t in dist){ const mp=dist[t]; for(const [kk,v] of mp) mp.set(kk, totalW>0?v/totalW:0); }
@@ -765,21 +798,32 @@ async function fetchLive(manual){
     if(!r.ok) throw new Error("HTTP "+r.status);
     const json=await r.json();
 
-    const gmap={};                         // sigla ESPN -> golos
+    const gmap={};                         // sigla ESPN -> {score, state, minute}
     for(const ev of (json.events||[])){
       const comp=ev.competitions&&ev.competitions[0]; if(!comp) continue;
+      const st=comp.status||ev.status||{};
+      const state=(st.type&&st.type.state)||null;     // "pre" | "in" | "post"
+      let minute=parseInt(st.displayClock,10);
+      if(!Number.isFinite(minute)){
+        if(/ht/i.test(st.displayClock||"")) minute=45;
+        else if(Number.isFinite(st.clock)) minute=Math.round(st.clock/60);
+        else minute = state==="post" ? 90 : 0;
+      }
       for(const c of (comp.competitors||[])){
         const ab=c.team&&c.team.abbreviation, sc=parseInt(c.score,10);
-        if(ab&&Number.isFinite(sc)) gmap[ab]=sc;
+        if(ab) gmap[ab]={score:Number.isFinite(sc)?sc:null, state, minute};
       }
     }
 
-    const rem={};
-    for(const G of "JKL".split(""))
-      rem[G]=ESPN_PAIRS[G].map(([h,a])=>[gmap[h], gmap[a]]);
+    const rem={}, live={};
+    for(const G of "JKL".split("")){
+      rem[G]=ESPN_PAIRS[G].map(([h,a])=>[gmap[h]&&gmap[h].score, gmap[a]&&gmap[a].score]);
+      live[G]=ESPN_PAIRS[G].map(([h,a])=>{ const e=gmap[h]||gmap[a]||{}; return {state:e.state||null, minute:Number.isFinite(e.minute)?e.minute:0}; });
+    }
+    LIVE=live;
 
     const updated=new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
-    if(applyLive({rem})) scoreChanged();
+    if(applyLive({rem})) scoreChanged(); else renderInputs();   // refresca odds com novo minuto/estado mesmo sem mudança de placar
     setLiveStatus("ao vivo · "+updated,"ok");
   }catch(e){ setLiveStatus(manual?"sem ligação — tenta de novo":"sem ligação","warn"); }
 }

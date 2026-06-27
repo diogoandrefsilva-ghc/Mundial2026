@@ -258,7 +258,7 @@
   <main>
     <section class="panel active" id="p-jogos">
       <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> vês o adversário que sai do placar que está aqui. Os placares vêm sempre em direto do ESPN — puxa o ecrã para baixo para atualizar.</p>
+      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> mexes nos placares à mão (toca nos +/−) e vês o adversário que daí sai. Em Probabilidades os placares vêm em direto do ESPN — puxa o ecrã para baixo para atualizar.</p>
       <div class="oddsmode">
         <button class="omode" data-view="prob">Probabilidades</button>
         <button class="omode" data-view="result">Com este resultado</button>
@@ -625,12 +625,13 @@ function renderInputs(){
     const g=GROUPS[G];
     h+=`<div class="card"><div class="grp-h"><div class="grp-badge">${G}</div>
       <div><div class="nm">Grupo ${G}</div><div class="sm">2 jogos em simultâneo</div></div><span class="grp-time">⏱ ${koLabel(G)}</span></div>`;
+    const editable = VIEW==="result";   // só na vista de simulação se podem mexer os placares
     for(let mi=0;mi<2;mi++){
       const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi];
       h+=`<div class="match2">
-        <div class="tcol h"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],true)}</div>
-        <div class="mmid"><span class="mx">×</span><span class="livetog on">● LIVE</span></div>
-        <div class="tcol a"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],true)}</div>
+        <div class="tcol h"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],!editable)}</div>
+        <div class="mmid"><span class="mx">×</span><span class="livetog${editable?'':' on'}">${editable?'✎ SIMULAR':'● LIVE'}</span></div>
+        <div class="tcol a"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],!editable)}</div>
         <div class="oddscell h">${oddsBlock(home,G)}</div>
         <div class="oddscell a">${oddsBlock(away,G)}</div>
       </div>`;
@@ -755,6 +756,15 @@ document.getElementById("btnKoReset").addEventListener("click",()=>{ PICKS={}; r
 document.querySelector(".oddsmode").addEventListener("click",e=>{
   const b=e.target.closest("button[data-view]"); if(!b) return;
   VIEW=b.dataset.view; saveState(); renderInputs();
+  // ao voltar às probabilidades, re-sincroniza com o live (descarta a simulação)
+  if(VIEW==="prob" && LIVE_ENABLED) fetchLive(false);
+});
+// steppers: editáveis apenas na vista "Com este resultado" (simulação manual)
+document.getElementById("inputs").addEventListener("click",e=>{
+  const b=e.target.closest(".stepper button"); if(!b||b.disabled||VIEW!=="result") return;
+  const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d;
+  const sc=SCORES[G][mi]; sc[side]=Math.max(0, sc[side]+d);
+  scoreChanged();
 });
 
 /* tabs */
@@ -826,8 +836,13 @@ async function fetchLive(manual){
     LIVE=live;
 
     const updated=new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
-    if(applyLive({rem})) scoreChanged(); else renderInputs();   // refresca odds com novo minuto/estado mesmo sem mudança de placar
-    setLiveStatus("ao vivo · "+updated,"ok");
+    if(VIEW==="result"){
+      // em simulação manual o live fica em pausa: não sobrescreve os placares editados
+      setLiveStatus("simulação · live em pausa","warn");
+    } else {
+      if(applyLive({rem})) scoreChanged(); else renderInputs();   // refresca odds com novo minuto/estado mesmo sem mudança de placar
+      setLiveStatus("ao vivo · "+updated,"ok");
+    }
   }catch(e){ setLiveStatus(manual?"sem ligação — tenta de novo":"sem ligação","warn"); }
 }
 /* botão "atualizar live" removido — o pull-to-refresh (puxar o ecrã) faz o mesmo */

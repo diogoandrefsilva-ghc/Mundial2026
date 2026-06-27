@@ -64,19 +64,23 @@
   .grp-h .sm{color:var(--mut);font-size:12px}
 
   /* ---- INPUTS: compactos, bandeira antes do nome ---- */
-  .match2{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px dashed var(--line)}
+  .match2{display:grid;grid-template-columns:1fr auto 1fr;column-gap:8px;row-gap:6px;padding:9px 0;border-top:1px dashed var(--line)}
   .match2:first-of-type{border-top:0;padding-top:2px}
-  .tcol{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .tcol{grid-row:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+  .tcol.h{grid-column:1}
+  .tcol.a{grid-column:3}
   .tlabel{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
   .tlabel .flag2{font-size:18px;line-height:1;flex:none}
   .tlabel .tn2{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mmid{flex:none;display:flex;flex-direction:column;align-items:center;gap:7px}
+  .oddscell{grid-row:2;min-width:0}
+  .oddscell.h{grid-column:1}
+  .oddscell.a{grid-column:3}
+  .mmid{grid-row:1;grid-column:2;align-self:start;display:flex;flex-direction:column;align-items:center;gap:7px}
   .mmid .mx{color:var(--dim);font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700}
-  .livetog{appearance:none;border:1px solid var(--line2);background:var(--panel2);color:var(--mut);
+  .livetog{display:inline-block;border:1px solid var(--line2);background:var(--panel2);color:var(--mut);
            font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.5px;
-           padding:3px 8px;border-radius:20px;cursor:pointer;white-space:nowrap}
+           padding:3px 8px;border-radius:20px;white-space:nowrap}
   .livetog.on{background:var(--cyan);color:var(--ink);border-color:var(--cyan)}
-  .livetog:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
   .stepper{display:flex;align-items:center;background:var(--ink);border:1px solid var(--line2);border-radius:10px;overflow:hidden}
   .stepper button{appearance:none;border:0;background:transparent;color:var(--txt);font-size:17px;font-weight:700;
                   width:32px;height:32px;cursor:pointer;line-height:1;display:grid;place-items:center}
@@ -254,13 +258,13 @@
   <main>
     <section class="panel active" id="p-jogos">
       <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> vês o adversário que sai do placar que está aqui. Liga o <b>live</b> num jogo para o resultado vir do ESPN — puxa o ecrã para baixo para atualizar.</p>
+      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> vês o adversário que sai do placar que está aqui. Os placares vêm sempre em direto do ESPN — puxa o ecrã para baixo para atualizar.</p>
       <div class="oddsmode">
         <button class="omode" data-view="prob">Probabilidades</button>
         <button class="omode" data-view="result">Com este resultado</button>
       </div>
       <div id="inputs"></div>
-      <div class="liverow"><span class="livestatus" id="liveStatus">modo manual</span></div>
+      <div class="liverow"><span class="livestatus" id="liveStatus">a sincronizar…</span></div>
     </section>
 
     <section class="panel" id="p-grupos">
@@ -436,19 +440,17 @@ const ROUNDS=[
 
 /* ============ ESTADO ============ */
 let SCORES = JSON.parse(JSON.stringify(DEFAULT));
-let LIVE_ON = { J:[false,false], K:[false,false], L:[false,false] };
 let PICKS = {};
 let CUR = null;
 let ODDS = null;
 let VIEW = "prob";   // "prob" = probabilidades pré-jogo · "result" = adversário com o resultado atual
 
 const LS_KEY="mundial2026:v2";
-function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, live:LIVE_ON, view:VIEW})); }catch(e){} }
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, view:VIEW})); }catch(e){} }
 function loadState(){
   try{
     const o=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(!o) return;
     if(o.scores) for(const G of "JKL".split("")){ if(Array.isArray(o.scores[G])) for(let mi=0;mi<2;mi++){ const s=o.scores[G][mi]; if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])) SCORES[G][mi]=[s[0]|0,s[1]|0]; } }
-    if(o.live)   for(const G of "JKL".split("")){ if(Array.isArray(o.live[G]))   for(let mi=0;mi<2;mi++) LIVE_ON[G][mi]=!!o.live[G][mi]; }
     if(o.view==="result"||o.view==="prob") VIEW=o.view;
   }catch(e){}
 }
@@ -588,11 +590,13 @@ function renderInputs(){
     h+=`<div class="card"><div class="grp-h"><div class="grp-badge">${G}</div>
       <div><div class="nm">Grupo ${G}</div><div class="sm">2 jogos em simultâneo</div></div><span class="grp-time">⏱ ${koLabel(G)}</span></div>`;
     for(let mi=0;mi<2;mi++){
-      const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi], on=LIVE_ON[G][mi];
+      const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi];
       h+=`<div class="match2">
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],on)}${oddsBlock(home,G)}</div>
-        <div class="mmid"><span class="mx">×</span><button class="livetog ${on?'on':''}" data-g="${G}" data-m="${mi}" data-live="1" aria-pressed="${on}">${on?'● LIVE':'live'}</button></div>
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],on)}${oddsBlock(away,G)}</div>
+        <div class="tcol h"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],true)}</div>
+        <div class="mmid"><span class="mx">×</span><span class="livetog on">● LIVE</span></div>
+        <div class="tcol a"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],true)}</div>
+        <div class="oddscell h">${oddsBlock(home,G)}</div>
+        <div class="oddscell a">${oddsBlock(away,G)}</div>
       </div>`;
     }
     h+=`</div>`;
@@ -705,16 +709,6 @@ function renderKnockout(){
 
 /* ===================== EVENTOS ===================== */
 function scoreChanged(){ PICKS={}; recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout(); saveState(); }
-function toggleLive(G,mi){ LIVE_ON[G][mi]=!LIVE_ON[G][mi]; saveState(); renderInputs(); if(LIVE_ON[G][mi]) fetchLive(true); }
-
-document.getElementById("inputs").addEventListener("click",e=>{
-  const lv=e.target.closest("button[data-live]");
-  if(lv){ toggleLive(lv.dataset.g, +lv.dataset.m); return; }
-  const b=e.target.closest("button[data-d]"); if(!b||b.disabled) return;
-  const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d;
-  let v=SCORES[G][mi][side]+d; if(v<0)v=0; if(v>19)v=19;
-  SCORES[G][mi][side]=v; scoreChanged();
-});
 document.getElementById("knockout").addEventListener("click",e=>{
   const b=e.target.closest("button.koteam"); if(!b||b.disabled) return;
   const id=b.dataset.id, side=b.dataset.side;
@@ -753,7 +747,6 @@ function applyLive(data){
   for(const G of "JKL".split("")){
     const arr=rem[G]; if(!Array.isArray(arr)) continue;
     for(let mi=0;mi<2;mi++){
-      if(!LIVE_ON[G][mi]) continue;                 // só jogos com "live" ligado
       const s=arr[mi];
       if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])){
         const nv=[Math.max(0,s[0]|0),Math.max(0,s[1]|0)], cur=SCORES[G][mi];
@@ -764,8 +757,6 @@ function applyLive(data){
   return changed;
 }
 async function fetchLive(manual){
-  const anyLive = LIVE_ON.J.concat(LIVE_ON.K, LIVE_ON.L).some(Boolean);
-  if(!anyLive){ setLiveStatus("modo manual","warn"); return; }
   setLiveStatus("a obter…","load");
   try{
     const ctrl=new AbortController(); const tm=setTimeout(()=>ctrl.abort(),6000);
@@ -830,7 +821,7 @@ async function _doRefresh(){
 /* ===================== ARRANQUE ===================== */
 loadState();
 recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout();
-if(LIVE_ENABLED){ fetchLive(false); setInterval(()=>fetchLive(false), 60000); } // só atualiza os jogos com "live" ligado
+if(LIVE_ENABLED){ fetchLive(false); setInterval(()=>fetchLive(false), 60000); }
 setInterval(renderInputs, 60000); // refresca odds + barreira "a partir da hora de início"
 </script>
 </body>

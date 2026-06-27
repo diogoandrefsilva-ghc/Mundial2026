@@ -184,8 +184,11 @@
   .chead{height:30px;flex:0 0 30px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;
          font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:1px;color:var(--cyan);
          text-transform:uppercase;border-bottom:1px solid var(--line)}
-  .games{height:1240px;display:flex;flex-direction:column}
-  .gw{flex:1;display:flex;align-items:center;position:relative}
+  /* a coluna cresce com o nº de jogos (16 nos 16-avos): cada jogo nunca encolhe abaixo de 90px,
+     evitando que os últimos 16-avos transbordem e fiquem escondidos sob o banner do campeão.
+     Todas as colunas ficam com a mesma altura (stretch) -> conectores continuam alinhados. */
+  .games{flex:1 1 auto;display:flex;flex-direction:column}
+  .gw{flex:1 0 90px;display:flex;align-items:center;position:relative}
   .gw .ko{width:100%}
   /* conectores: cada par liga-se ao jogo seguinte */
   .col:not(:last-child) .gw:nth-child(odd)::after{

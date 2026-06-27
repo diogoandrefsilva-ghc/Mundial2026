@@ -84,7 +84,7 @@
   .stepper button:disabled{cursor:default;color:var(--dim)}
   .stepper.dis{opacity:.5}
   .stepper .val{min-width:24px;text-align:center;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:16px}
-  .qopp{font-family:"IBM Plex Mono",monospace;font-size:10px;line-height:1.3;margin-top:6px;width:100%;max-width:100%}
+  .qopp{font-family:"IBM Plex Mono",monospace;font-size:10px;line-height:1.3;margin-top:6px;width:100%;max-width:100%;text-align:center}
   .qopp .oddline{display:flex;align-items:center;justify-content:center;gap:5px;padding:1px 0;color:var(--txt)}
   .qopp .oddline .f{flex:none}
   .qopp .oddline .nm{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:92px}
@@ -97,6 +97,11 @@
   .qopp .badge .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .grp-time{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;color:var(--cyan);
             border:1px solid var(--line2);border-radius:8px;padding:2px 8px;flex:none}
+  .oddsmode{display:flex;gap:6px;margin:0 0 14px}
+  .omode{flex:1;appearance:none;border:1px solid var(--line2);background:var(--panel2);color:var(--mut);
+         font-family:Inter,sans-serif;font-weight:600;font-size:12px;padding:8px 6px;border-radius:10px;cursor:pointer;min-height:38px}
+  .omode.active{background:var(--lime);color:var(--ink);border-color:var(--lime)}
+  .omode:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
   .liverow{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
   .livestatus{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--mut);padding:3px 9px;border-radius:20px;border:1px solid var(--line2);background:var(--panel2)}
   .livestatus.ok{color:var(--ink);background:var(--lime);border-color:var(--lime)}
@@ -168,8 +173,8 @@
   .bracket-hint .k{color:var(--cyan)}
   .bracket-scroll{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;padding:2px 2px 14px;
                   scrollbar-width:thin}
-  .bracket{display:flex;gap:34px;min-width:884px}
-  .col{display:flex;flex-direction:column;flex:0 0 144px}
+  .bracket{display:flex;gap:34px;min-width:976px}
+  .col{display:flex;flex-direction:column;flex:0 0 168px}
   .chead{height:30px;flex:0 0 30px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;
          font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:1px;color:var(--cyan);
          text-transform:uppercase;border-bottom:1px solid var(--line)}
@@ -188,12 +193,12 @@
   .ko{background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow:hidden}
   .ko .jno{font-family:"IBM Plex Mono",monospace;font-size:9px;letter-spacing:.5px;color:var(--dim);
            padding:4px 8px 1px;display:flex;justify-content:space-between}
-  .koteam{display:flex;align-items:center;gap:7px;padding:7px 8px;border:0;background:transparent;color:var(--txt);
-          font-family:Inter,sans-serif;font-size:12.5px;text-align:left;width:100%;cursor:pointer;border-top:1px solid var(--line)}
+  .koteam{display:flex;align-items:center;gap:6px;padding:7px 7px;border:0;background:transparent;color:var(--txt);
+          font-family:Inter,sans-serif;font-size:12px;text-align:left;width:100%;cursor:pointer;border-top:1px solid var(--line)}
   .koteam:first-child{border-top:0}
-  .koteam .fl{font-size:15px;width:18px;text-align:center;flex:none}
+  .koteam .fl{font-size:14px;width:16px;text-align:center;flex:none}
   .koteam .nm{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .koteam .src{color:var(--dim);font-family:"IBM Plex Mono",monospace;font-size:9.5px;flex:none}
+  .koteam .src{color:var(--dim);font-family:"IBM Plex Mono",monospace;font-size:9px;flex:none}
   .koteam.pick{background:linear-gradient(90deg,rgba(198,255,61,.18),transparent)}
   .koteam.pick .nm{color:var(--lime)}
   .koteam.dim{opacity:.4}
@@ -249,7 +254,11 @@
   <main>
     <section class="panel active" id="p-jogos">
       <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Ordenados por hora de início. Por baixo de cada equipa vês os <b>possíveis adversários nos playoffs</b> e a probabilidade de calhar cada um (ponderada pelo ranking FIFA). As odds ajustam-se à medida que os jogos começam e terminam. Liga o <b>live</b> num jogo para o resultado vir do ESPN — puxa o ecrã para baixo para forçar atualização.</p>
+      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> vês o adversário que sai do placar que está aqui. Liga o <b>live</b> num jogo para o resultado vir do ESPN — puxa o ecrã para baixo para atualizar.</p>
+      <div class="oddsmode">
+        <button class="omode" data-view="prob">Probabilidades</button>
+        <button class="omode" data-view="result">Com este resultado</button>
+      </div>
       <div id="inputs"></div>
       <div class="liverow"><span class="livestatus" id="liveStatus">modo manual</span></div>
     </section>
@@ -431,14 +440,16 @@ let LIVE_ON = { J:[false,false], K:[false,false], L:[false,false] };
 let PICKS = {};
 let CUR = null;
 let ODDS = null;
+let VIEW = "prob";   // "prob" = probabilidades pré-jogo · "result" = adversário com o resultado atual
 
 const LS_KEY="mundial2026:v2";
-function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, live:LIVE_ON})); }catch(e){} }
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, live:LIVE_ON, view:VIEW})); }catch(e){} }
 function loadState(){
   try{
     const o=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(!o) return;
     if(o.scores) for(const G of "JKL".split("")){ if(Array.isArray(o.scores[G])) for(let mi=0;mi<2;mi++){ const s=o.scores[G][mi]; if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])) SCORES[G][mi]=[s[0]|0,s[1]|0]; } }
     if(o.live)   for(const G of "JKL".split("")){ if(Array.isArray(o.live[G]))   for(let mi=0;mi<2;mi++) LIVE_ON[G][mi]=!!o.live[G][mi]; }
+    if(o.view==="result"||o.view==="prob") VIEW=o.view;
   }catch(e){}
 }
 
@@ -541,28 +552,36 @@ function r32MatchOf(src){  // encontra o jogo dos 16-avos onde 'src' (ex.: "W:J"
     if(d[0]===src) return {id,opp:d[1]}; if(d[1]===src) return {id,opp:d[0]}; }
   return null;
 }
-function oddsBlock(team){   // lista de possíveis adversários + probabilidade; badge se já estiver garantido
+function oppCell(k){   // conteúdo (bandeira + nome) de um adversário
+  if(k==="__OUT__") return `<span class="nm">não apura</span>`;
+  if(k==="__TBD__") return `<span class="nm">a definir</span>`;
+  return `<span class="f">${fl(k)}</span><span class="nm">${pt(k)}</span>`;
+}
+function oddsBlock(team,G){
   const mp = ODDS && ODDS[team];
   if(!mp || !mp.size) return `<div class="qopp"></div>`;
   const entries=[...mp.entries()].filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
   if(!entries.length) return `<div class="qopp"></div>`;
-  const top=entries[0];
-  if(top[1]>=0.999){   // adversário certo -> badge à volta
-    if(top[0]==="__OUT__") return `<div class="qopp"><span class="badge outb"><span class="nm">não apura</span></span></div>`;
-    if(top[0]==="__TBD__") return `<div class="qopp"><span class="badge"><span class="nm">a definir</span></span></div>`;
-    return `<div class="qopp"><span class="badge">✓ <span class="f">${fl(top[0])}</span><span class="nm">${pt(top[0])}</span></span></div>`;
+  // adversário garantido (em qualquer combinação) -> badge à volta
+  if(entries[0][1]>=0.999){
+    const k=entries[0][0], out=k==="__OUT__";
+    return `<div class="qopp"><span class="badge ${out?'outb':''}">${out?'':'✓ '}${oppCell(k)}</span></div>`;
   }
+  if(VIEW==="result"){   // adversário determinístico com o placar atual
+    const opp=teamOppInWorld(team,G,CUR), k = opp==null ? "__TBD__" : opp, out=k==="__OUT__";
+    return `<div class="qopp"><div class="oddline ${out?'out':''}">${oppCell(k)}</div></div>`;
+  }
+  // VIEW==="prob": distribuição pré-jogo (mostra também hipóteses pouco prováveis)
   let h=`<div class="qopp">`;
-  for(const [k,v] of entries.filter(([k,v])=>v>=0.05).slice(0,4)){
-    const pct=Math.round(v*100)+"%";
-    if(k==="__OUT__")      h+=`<div class="oddline out"><span class="nm">não apura</span><span class="pct">${pct}</span></div>`;
-    else if(k==="__TBD__") h+=`<div class="oddline"><span class="nm">a definir</span><span class="pct">${pct}</span></div>`;
-    else                   h+=`<div class="oddline"><span class="f">${fl(k)}</span><span class="nm">${pt(k)}</span><span class="pct">${pct}</span></div>`;
+  for(const [k,v] of entries.filter(([k,v])=>v>=0.005).slice(0,8)){
+    const out=k==="__OUT__";
+    h+=`<div class="oddline ${out?'out':''}">${oppCell(k)}<span class="pct">${Math.round(v*100)}%</span></div>`;
   }
   return h+`</div>`;
 }
 function renderInputs(){
   ODDS=opponentDistribution();
+  document.querySelectorAll(".omode").forEach(b=>b.classList.toggle("active", b.dataset.view===VIEW));
   let h="";
   for(const G of groupsByKickoff()){
     const g=GROUPS[G];
@@ -571,9 +590,9 @@ function renderInputs(){
     for(let mi=0;mi<2;mi++){
       const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi], on=LIVE_ON[G][mi];
       h+=`<div class="match2">
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],on)}${oddsBlock(home)}</div>
+        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],on)}${oddsBlock(home,G)}</div>
         <div class="mmid"><span class="mx">×</span><button class="livetog ${on?'on':''}" data-g="${G}" data-m="${mi}" data-live="1" aria-pressed="${on}">${on?'● LIVE':'live'}</button></div>
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],on)}${oddsBlock(away)}</div>
+        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],on)}${oddsBlock(away,G)}</div>
       </div>`;
     }
     h+=`</div>`;
@@ -703,6 +722,10 @@ document.getElementById("knockout").addEventListener("click",e=>{
   clearDescendants(id); renderKnockout();
 });
 document.getElementById("btnKoReset").addEventListener("click",()=>{ PICKS={}; renderKnockout(); });
+document.querySelector(".oddsmode").addEventListener("click",e=>{
+  const b=e.target.closest("button[data-view]"); if(!b) return;
+  VIEW=b.dataset.view; saveState(); renderInputs();
+});
 
 /* tabs */
 document.querySelectorAll(".tab").forEach(tb=>tb.addEventListener("click",()=>{

@@ -258,7 +258,7 @@
   <main>
     <section class="panel active" id="p-jogos">
       <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> mexes nos placares à mão (toca nos +/−) e vês o adversário que daí sai. Em Probabilidades os placares vêm em direto do ESPN — puxa o ecrã para baixo para atualizar.</p>
+      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> mexes à mão (+/−) nos jogos que ainda não estão a decorrer — os que estão em direto continuam a ler o placar live — e vês o adversário que daí sai. Em Probabilidades o placar vem sempre do ESPN — puxa o ecrã para baixo para atualizar.</p>
       <div class="oddsmode">
         <button class="omode" data-view="prob">Probabilidades</button>
         <button class="omode" data-view="result">Com este resultado</button>
@@ -439,7 +439,9 @@ const ROUNDS=[
 ];
 
 /* ============ ESTADO ============ */
-let SCORES = JSON.parse(JSON.stringify(DEFAULT));
+let SCORES = JSON.parse(JSON.stringify(DEFAULT));      // valores da SIMULAÇÃO (vista "Com este resultado")
+let LSCORE = { J:[null,null], K:[null,null], L:[null,null] };  // placar real/live do ESPN (verdade oficial)
+let EDITED = new Set();                                // jogos "G:mi" alterados à mão na simulação
 let PICKS = {};
 let CUR = null;
 let ODDS = null;
@@ -447,11 +449,12 @@ let LIVE = { J:[{},{}], K:[{},{}], L:[{},{}] };   // {state,minute} por jogo (pr
 let VIEW = "prob";   // "prob" = probabilidades pré-jogo · "result" = adversário com o resultado atual
 
 const LS_KEY="mundial2026:v2";
-function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, view:VIEW})); }catch(e){} }
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, view:VIEW, edited:[...EDITED]})); }catch(e){} }
 function loadState(){
   try{
     const o=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(!o) return;
     if(o.scores) for(const G of "JKL".split("")){ if(Array.isArray(o.scores[G])) for(let mi=0;mi<2;mi++){ const s=o.scores[G][mi]; if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])) SCORES[G][mi]=[s[0]|0,s[1]|0]; } }
+    if(Array.isArray(o.edited)) EDITED=new Set(o.edited.filter(k=>/^[JKL]:[01]$/.test(k)));
     if(o.view==="result"||o.view==="prob") VIEW=o.view;
   }catch(e){}
 }
@@ -473,7 +476,22 @@ function computeWorld(scores){   // calcula apuramento + Anexo C para um conjunt
   const oppOf={};   SLOT_LETTERS.forEach((L,i)=>{ if(val[i]) oppOf[val[i]]="1"+L; });
   return {res,jkl,ranked,qual,key,val,slotGroup,oppOf};
 }
-function recompute(){ CUR=computeWorld(SCORES); }
+// ----- conjuntos de placares conforme o estado de cada jogo -----
+function finiteSc(s){ return Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1]); }
+function gameState(G,mi){ const lv=(LIVE[G]&&LIVE[G][mi])||{}; return lv.state || (Date.now()>=koTs(G) ? "in" : "pre"); }
+function gameMinute(G,mi){ const lv=(LIVE[G]&&LIVE[G][mi])||{}; return lv.minute||0; }
+// Mundo "oficial/live" (vista Probabilidades): placar do ESPN onde existe, senão o cenário base.
+function liveScores(){ const s={}; for(const G of "JKL".split("")) s[G]=[0,1].map(mi=> finiteSc(LSCORE[G][mi])?LSCORE[G][mi].slice():DEFAULT[G][mi].slice()); return s; }
+// Mundo "simulado" (vista Com este resultado): jogos a decorrer seguem o live (bloqueados);
+// os que o utilizador alterou usam o valor dele; os restantes mostram o oficial (se já houver) ou a base.
+function simScores(){ const s={}; for(const G of "JKL".split("")) s[G]=[0,1].map(mi=>{
+  if(gameState(G,mi)==="in" && finiteSc(LSCORE[G][mi])) return LSCORE[G][mi].slice();
+  if(EDITED.has(G+":"+mi)) return SCORES[G][mi].slice();
+  if(finiteSc(LSCORE[G][mi])) return LSCORE[G][mi].slice();
+  return SCORES[G][mi].slice();
+}); return s; }
+function activeScores(){ return VIEW==="result" ? simScores() : liveScores(); }
+function recompute(){ CUR=computeWorld(activeScores()); }
 
 function resolveSrc(src){
   const p=src.split(":"); const k=p[0], v=p[1];
@@ -543,9 +561,9 @@ function teamOppInWorld(team,G,W){  // adversário nos 16-avos (ou "__OUT__" se 
 function opponentDistribution(){
   const games=[];
   for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++){
-    const pr=GROUPS[G].rem[mi]; const lv=(LIVE[G]&&LIVE[G][mi])||{};
-    const state=lv.state || (Date.now()>=koTs(G) ? "in" : "pre");   // sem ESPN, decide pela hora
-    games.push({G,mi,h:pr[0],a:pr[1], state, minute:lv.minute||0, score:SCORES[G][mi].slice()});
+    const pr=GROUPS[G].rem[mi];
+    const score = finiteSc(LSCORE[G][mi]) ? LSCORE[G][mi].slice() : [0,0];   // ODDS = sempre o live oficial
+    games.push({G,mi,h:pr[0],a:pr[1], state:gameState(G,mi), minute:gameMinute(G,mi), score});
   }
   const outs=games.map(gameOutcomes);
   // Beam search: guardamos sempre os MAXSC cenários mais prováveis. NÃO podamos
@@ -625,12 +643,17 @@ function renderInputs(){
     const g=GROUPS[G];
     h+=`<div class="card"><div class="grp-h"><div class="grp-badge">${G}</div>
       <div><div class="nm">Grupo ${G}</div><div class="sm">2 jogos em simultâneo</div></div><span class="grp-time">⏱ ${koLabel(G)}</span></div>`;
-    const editable = VIEW==="result";   // só na vista de simulação se podem mexer os placares
+    const disp=activeScores();   // valores a mostrar conforme a vista (live ou simulação)
     for(let mi=0;mi<2;mi++){
-      const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi];
+      const home=g.rem[mi][0], away=g.rem[mi][1], sc=disp[G][mi];
+      const isLive=gameState(G,mi)==="in";
+      const editable=VIEW==="result" && !isLive;   // a decorrer -> bloqueado (lê o live); o resto -> editável
+      const badge = isLive ? `<span class="livetog on">● LIVE</span>`
+                  : editable ? `<span class="livetog">✎ SIMULAR</span>`
+                  : `<span class="livetog on">● LIVE</span>`;
       h+=`<div class="match2">
         <div class="tcol h"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],!editable)}</div>
-        <div class="mmid"><span class="mx">×</span><span class="livetog${editable?'':' on'}">${editable?'✎ SIMULAR':'● LIVE'}</span></div>
+        <div class="mmid"><span class="mx">×</span>${badge}</div>
         <div class="tcol a"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],!editable)}</div>
         <div class="oddscell h">${oddsBlock(home,G)}</div>
         <div class="oddscell a">${oddsBlock(away,G)}</div>
@@ -755,14 +778,16 @@ document.getElementById("knockout").addEventListener("click",e=>{
 document.getElementById("btnKoReset").addEventListener("click",()=>{ PICKS={}; renderKnockout(); });
 document.querySelector(".oddsmode").addEventListener("click",e=>{
   const b=e.target.closest("button[data-view]"); if(!b) return;
-  VIEW=b.dataset.view; saveState(); renderInputs();
-  // ao voltar às probabilidades, re-sincroniza com o live (descarta a simulação)
-  if(VIEW==="prob" && LIVE_ENABLED) fetchLive(false);
+  VIEW=b.dataset.view; saveState();
+  scoreChanged();   // o mundo (tabelas/terceiros/quadro) muda com a vista -> recalcula tudo
 });
-// steppers: editáveis apenas na vista "Com este resultado" (simulação manual)
+// steppers: editáveis na vista "Com este resultado", nos jogos que NÃO estão a decorrer
 document.getElementById("inputs").addEventListener("click",e=>{
   const b=e.target.closest(".stepper button"); if(!b||b.disabled||VIEW!=="result") return;
   const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d;
+  if(gameState(G,mi)==="in") return;   // jogo a decorrer: manda o live
+  const key=G+":"+mi;
+  if(!EDITED.has(key)){ SCORES[G][mi]=simScores()[G][mi].slice(); EDITED.add(key); }  // parte do valor mostrado (oficial/base)
   const sc=SCORES[G][mi]; sc[side]=Math.max(0, sc[side]+d);
   scoreChanged();
 });
@@ -795,8 +820,8 @@ function applyLive(data){
     for(let mi=0;mi<2;mi++){
       const s=arr[mi];
       if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])){
-        const nv=[Math.max(0,s[0]|0),Math.max(0,s[1]|0)], cur=SCORES[G][mi];
-        if(cur[0]!==nv[0]||cur[1]!==nv[1]){ SCORES[G][mi]=nv; changed=true; }   // só recalcula se mudou mesmo
+        const nv=[Math.max(0,s[0]|0),Math.max(0,s[1]|0)], cur=LSCORE[G][mi];
+        if(!cur||cur[0]!==nv[0]||cur[1]!==nv[1]){ LSCORE[G][mi]=nv; changed=true; }   // atualiza só a verdade live
       }
     }
   }
@@ -836,13 +861,9 @@ async function fetchLive(manual){
     LIVE=live;
 
     const updated=new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
-    if(VIEW==="result"){
-      // em simulação manual o live fica em pausa: não sobrescreve os placares editados
-      setLiveStatus("simulação · live em pausa","warn");
-    } else {
-      if(applyLive({rem})) scoreChanged(); else renderInputs();   // refresca odds com novo minuto/estado mesmo sem mudança de placar
-      setLiveStatus("ao vivo · "+updated,"ok");
-    }
+    // o live só mexe em LSCORE: na simulação só afeta os jogos a decorrer; nos restantes a tua simulação mantém-se
+    if(applyLive({rem})) scoreChanged(); else renderInputs();   // refresca odds com novo minuto/estado mesmo sem mudança de placar
+    setLiveStatus("ao vivo · "+updated,"ok");
   }catch(e){ setLiveStatus(manual?"sem ligação — tenta de novo":"sem ligação","warn"); }
 }
 /* botão "atualizar live" removido — o pull-to-refresh (puxar o ecrã) faz o mesmo */

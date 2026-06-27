@@ -81,6 +81,8 @@
            font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.5px;
            padding:3px 8px;border-radius:20px;white-space:nowrap}
   .livetog.on{background:var(--cyan);color:var(--ink);border-color:var(--cyan)}
+  .livebtn{cursor:pointer;-webkit-appearance:none;appearance:none}
+  .livebtn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
   .stepper{display:flex;align-items:center;background:var(--ink);border:1px solid var(--line2);border-radius:10px;overflow:hidden}
   .stepper button{appearance:none;border:0;background:transparent;color:var(--txt);font-size:17px;font-weight:700;
                   width:32px;height:32px;cursor:pointer;line-height:1;display:grid;place-items:center}
@@ -258,7 +260,7 @@
   <main>
     <section class="panel active" id="p-jogos">
       <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> mexes à mão (+/−) nos jogos que ainda não estão a decorrer — os que estão em direto continuam a ler o placar live — e vês o adversário que daí sai. Em Probabilidades o placar vem sempre do ESPN — puxa o ecrã para baixo para atualizar.</p>
+      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> cada jogo segue o live (<b>● LIVE</b>); toca no selo para o passares a <b>✎ MANUAL</b> e definires tu o resultado (+/−), e toca outra vez para voltar ao live — vês o adversário que daí sai. Em Probabilidades o placar vem sempre do ESPN — puxa o ecrã para baixo para atualizar.</p>
       <div class="oddsmode">
         <button class="omode" data-view="prob">Probabilidades</button>
         <button class="omode" data-view="result">Com este resultado</button>
@@ -441,7 +443,7 @@ const ROUNDS=[
 /* ============ ESTADO ============ */
 let SCORES = JSON.parse(JSON.stringify(DEFAULT));      // valores da SIMULAÇÃO (vista "Com este resultado")
 let LSCORE = { J:[null,null], K:[null,null], L:[null,null] };  // placar real/live do ESPN (verdade oficial)
-let EDITED = new Set();                                // jogos "G:mi" alterados à mão na simulação
+let MANUAL = new Set();                                // jogos "G:mi" em modo manual (utilizador define; senão segue o live)
 let PICKS = {};
 let CUR = null;
 let ODDS = null;
@@ -449,12 +451,12 @@ let LIVE = { J:[{},{}], K:[{},{}], L:[{},{}] };   // {state,minute} por jogo (pr
 let VIEW = "prob";   // "prob" = probabilidades pré-jogo · "result" = adversário com o resultado atual
 
 const LS_KEY="mundial2026:v2";
-function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, view:VIEW, edited:[...EDITED]})); }catch(e){} }
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, view:VIEW, manual:[...MANUAL]})); }catch(e){} }
 function loadState(){
   try{
     const o=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(!o) return;
     if(o.scores) for(const G of "JKL".split("")){ if(Array.isArray(o.scores[G])) for(let mi=0;mi<2;mi++){ const s=o.scores[G][mi]; if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])) SCORES[G][mi]=[s[0]|0,s[1]|0]; } }
-    if(Array.isArray(o.edited)) EDITED=new Set(o.edited.filter(k=>/^[JKL]:[01]$/.test(k)));
+    if(Array.isArray(o.manual)) MANUAL=new Set(o.manual.filter(k=>/^[JKL]:[01]$/.test(k)));
     if(o.view==="result"||o.view==="prob") VIEW=o.view;
   }catch(e){}
 }
@@ -485,10 +487,9 @@ function liveScores(){ const s={}; for(const G of "JKL".split("")) s[G]=[0,1].ma
 // Mundo "simulado" (vista Com este resultado): jogos a decorrer seguem o live (bloqueados);
 // os que o utilizador alterou usam o valor dele; os restantes mostram o oficial (se já houver) ou a base.
 function simScores(){ const s={}; for(const G of "JKL".split("")) s[G]=[0,1].map(mi=>{
-  if(gameState(G,mi)==="in" && finiteSc(LSCORE[G][mi])) return LSCORE[G][mi].slice();
-  if(EDITED.has(G+":"+mi)) return SCORES[G][mi].slice();
-  if(finiteSc(LSCORE[G][mi])) return LSCORE[G][mi].slice();
-  return SCORES[G][mi].slice();
+  if(MANUAL.has(G+":"+mi)) return SCORES[G][mi].slice();        // modo manual: valor do utilizador
+  if(finiteSc(LSCORE[G][mi])) return LSCORE[G][mi].slice();     // senão segue o live/oficial
+  return DEFAULT[G][mi].slice();                                 // ainda sem dados -> base
 }); return s; }
 function activeScores(){ return VIEW==="result" ? simScores() : liveScores(); }
 function recompute(){ CUR=computeWorld(activeScores()); }
@@ -525,21 +526,28 @@ function poissonVec(lam,n){           // [P(0), P(1), …, P(n)] golos adicionai
   for(let k=0;k<=n;k++){ out.push(p); p=p*lam/(k+1); }
   return out;
 }
-// Lista de finais plausíveis de um jogo, com peso, conforme o seu estado:
+function gameFrozen(g){ return g.state==="post" || (g.state!=="pre" && (90-g.minute)/90<=0.005); }
+// Lista de até K finais plausíveis de um jogo, com peso, conforme o seu estado:
 //  pre  → jogo inteiro a partir de 0-0
 //  in   → só o tempo que falta, somado ao placar atual (0-0 ao 30' mantém vivos 1-0, 0-1, 1-1…)
 //  post → resultado final congelado
-function gameOutcomes(g){
+// Garante sempre (se possível) um final de vitória-casa / empate / vitória-fora, para NÃO
+// perder adversários possíveis mas pouco prováveis; completa por peso até K.
+function gameOutcomes(g, K){
   const cur = g.state==="pre" ? [0,0] : g.score;
-  const f = g.state==="pre" ? 1 : (g.state==="post" ? 0 : Math.max((90-g.minute)/90, 0.02));
-  if(f<=0.005) return [{s:cur.slice(), w:1}];
+  if(gameFrozen(g)) return [{s:cur.slice(), w:1}];
+  const f = g.state==="pre" ? 1 : Math.max((90-g.minute)/90, 0.02);
   let [lh,la]=fullLambdas(g.h,g.a); lh*=f; la*=f;
   const N=6, ph=poissonVec(lh,N), pa=poissonVec(la,N);
-  let out=[];
-  for(let i=0;i<=N;i++) for(let j=0;j<=N;j++){ const w=ph[i]*pa[j]; if(w<1e-4) continue; out.push({s:[cur[0]+i,cur[1]+j], w}); }
-  out.sort((x,y)=>y.w-x.w); if(out.length>14) out.length=14;
-  const tot=out.reduce((s,o)=>s+o.w,0)||1; out.forEach(o=>o.w/=tot);
-  return out;
+  const all=[];
+  for(let i=0;i<=N;i++) for(let j=0;j<=N;j++){ const w=ph[i]*pa[j]; if(w<1e-5) continue; all.push({s:[cur[0]+i,cur[1]+j], w}); }
+  all.sort((x,y)=>y.w-x.w);
+  const sign=o=> o.s[0]>o.s[1]?1 : o.s[0]<o.s[1]?-1 : 0;
+  const chosen=[], seen=new Set();
+  for(const want of [1,0,-1]){ const o=all.find(x=>!seen.has(x)&&sign(x)===want); if(o){ chosen.push(o); seen.add(o); } }  // cobre V/E/D
+  for(const o of all){ if(chosen.length>=Math.max(K,3)) break; if(!seen.has(o)){ chosen.push(o); seen.add(o); } }
+  const tot=chosen.reduce((s,o)=>s+o.w,0)||1; chosen.forEach(o=>o.w/=tot);
+  return chosen;
 }
 function r32OppName(src, W){  // nome do adversário de 'src' (ex.: "W:J") nos 16-avos, no mundo W
   const p=src.split(":"), k=p[0], v=p[1];
@@ -565,11 +573,12 @@ function opponentDistribution(){
     const score = finiteSc(LSCORE[G][mi]) ? LSCORE[G][mi].slice() : [0,0];   // ODDS = sempre o live oficial
     games.push({G,mi,h:pr[0],a:pr[1], state:gameState(G,mi), minute:gameMinute(G,mi), score});
   }
-  const outs=games.map(gameOutcomes);
-  // Beam search: guardamos sempre os MAXSC cenários mais prováveis. NÃO podamos
-  // por peso absoluto — o peso é o produto de 6 jogos e encolhe sempre, logo um
-  // limiar fixo esvaziaria a distribuição toda.
-  const MAXSC=4000;
+  // Enumeração COMPLETA (sem beam) de um conjunto pequeno por jogo: escolhemos K por jogo
+  // de modo a caber no orçamento. Beam por peso descartaria adversários possíveis (raros),
+  // por isso preferimos menos finais por jogo, mas considerá-los TODOS.
+  const V=games.filter(g=>!gameFrozen(g)).length;          // jogos ainda por decidir
+  const BUDGET=30000, K=Math.max(3, Math.min(14, Math.floor(Math.pow(BUDGET, 1/Math.max(V,1)))));
+  const outs=games.map(g=>gameOutcomes(g,K));
   let scen=[{rem:{J:[null,null],K:[null,null],L:[null,null]}, w:1}];
   for(let gi=0; gi<games.length; gi++){
     const g=games[gi], ol=outs[gi], next=[];
@@ -578,7 +587,6 @@ function opponentDistribution(){
       const rem=JSON.parse(JSON.stringify(s.rem)); rem[g.G][g.mi]=o.s.slice();
       next.push({rem, w});
     }
-    if(next.length>MAXSC){ next.sort((a,b)=>b.w-a.w); next.length=MAXSC; }
     scen=next;
   }
   const dist={};
@@ -646,11 +654,12 @@ function renderInputs(){
     const disp=activeScores();   // valores a mostrar conforme a vista (live ou simulação)
     for(let mi=0;mi<2;mi++){
       const home=g.rem[mi][0], away=g.rem[mi][1], sc=disp[G][mi];
-      const isLive=gameState(G,mi)==="in";
-      const editable=VIEW==="result" && !isLive;   // a decorrer -> bloqueado (lê o live); o resto -> editável
-      const badge = isLive ? `<span class="livetog on">● LIVE</span>`
-                  : editable ? `<span class="livetog">✎ SIMULAR</span>`
-                  : `<span class="livetog on">● LIVE</span>`;
+      const key=G+":"+mi, manual=MANUAL.has(key);
+      const editable=VIEW==="result" && manual;    // só edita os jogos em modo manual
+      // na simulação o selo é um BOTÃO para alternar live ⇄ manual; nas probabilidades é só indicador
+      const badge = VIEW==="result"
+        ? `<button class="livetog livebtn${manual?'':' on'}" data-g="${G}" data-m="${mi}" title="${manual?'A definir por ti — tocar para voltar ao live':'A seguir o live — tocar para definir à mão'}">${manual?'✎ MANUAL':'● LIVE'}</button>`
+        : `<span class="livetog on">● LIVE</span>`;
       h+=`<div class="match2">
         <div class="tcol h"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],!editable)}</div>
         <div class="mmid"><span class="mx">×</span>${badge}</div>
@@ -781,13 +790,19 @@ document.querySelector(".oddsmode").addEventListener("click",e=>{
   VIEW=b.dataset.view; saveState();
   scoreChanged();   // o mundo (tabelas/terceiros/quadro) muda com a vista -> recalcula tudo
 });
-// steppers: editáveis na vista "Com este resultado", nos jogos que NÃO estão a decorrer
+// vista "Com este resultado": selo alterna live ⇄ manual por jogo; steppers só editam em modo manual
 document.getElementById("inputs").addEventListener("click",e=>{
-  const b=e.target.closest(".stepper button"); if(!b||b.disabled||VIEW!=="result") return;
-  const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d;
-  if(gameState(G,mi)==="in") return;   // jogo a decorrer: manda o live
-  const key=G+":"+mi;
-  if(!EDITED.has(key)){ SCORES[G][mi]=simScores()[G][mi].slice(); EDITED.add(key); }  // parte do valor mostrado (oficial/base)
+  if(VIEW!=="result") return;
+  const tg=e.target.closest(".livebtn");
+  if(tg){   // alterna o modo do jogo
+    const G=tg.dataset.g, mi=+tg.dataset.m, key=G+":"+mi;
+    if(MANUAL.has(key)) MANUAL.delete(key);                                 // volta a seguir o live
+    else { SCORES[G][mi]=simScores()[G][mi].slice(); MANUAL.add(key); }     // passa a manual, partindo do valor mostrado
+    scoreChanged(); return;
+  }
+  const b=e.target.closest(".stepper button"); if(!b||b.disabled) return;
+  const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d, key=G+":"+mi;
+  if(!MANUAL.has(key)) return;   // segurança: só os jogos em modo manual se editam
   const sc=SCORES[G][mi]; sc[side]=Math.max(0, sc[side]+d);
   scoreChanged();
 });

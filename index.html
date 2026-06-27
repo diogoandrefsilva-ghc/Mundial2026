@@ -626,7 +626,13 @@ document.querySelectorAll(".tab").forEach(tb=>tb.addEventListener("click",()=>{
 
 /* ---- resultados ao vivo (opcional) ---- */
 const LIVE_ENABLED = true;
-const LIVE_URL = "https://raw.githubusercontent.com/diogoandrefsilva-ghc/AppDataJSON/main/mundial2026.json";
+const ESPN_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard";
+// Mesma ordem do GROUPS[*].rem, em siglas ESPN. Casamos por sigla -> casa/fora e indiferente.
+const ESPN_PAIRS = {
+  J: [["ALG","AUT"], ["JOR","ARG"]],   // Argelia-Austria, Jordania-Argentina
+  K: [["COL","POR"], ["COD","UZB"]],   // Colombia-Portugal, RD Congo-Usbequistao
+  L: [["PAN","ENG"], ["CRO","GHA"]]    // Panama-Inglaterra, Croacia-Gana
+};
 function setLiveStatus(txt,cls){ const el=document.getElementById("liveStatus"); if(el){ el.textContent=txt; el.className="livestatus"+(cls?(" "+cls):""); } }
 function applyLive(data){
   if(!data||typeof data!=="object") return false;
@@ -647,11 +653,26 @@ async function fetchLive(manual){
   setLiveStatus("a obter…","load");
   try{
     const ctrl=new AbortController(); const tm=setTimeout(()=>ctrl.abort(),6000);
-    const r=await fetch(LIVE_URL,{cache:"no-store",signal:ctrl.signal});
+    const r=await fetch(ESPN_URL,{cache:"no-store",signal:ctrl.signal});
     clearTimeout(tm);
     if(!r.ok) throw new Error("HTTP "+r.status);
-    const data=await r.json();
-    if(applyLive(data)){ scoreChanged(); setLiveStatus("ao vivo"+(data.updated?(" · "+data.updated):""),"ok"); }
+    const json=await r.json();
+
+    const gmap={};                         // sigla ESPN -> golos
+    for(const ev of (json.events||[])){
+      const comp=ev.competitions&&ev.competitions[0]; if(!comp) continue;
+      for(const c of (comp.competitors||[])){
+        const ab=c.team&&c.team.abbreviation, sc=parseInt(c.score,10);
+        if(ab&&Number.isFinite(sc)) gmap[ab]=sc;
+      }
+    }
+
+    const rem={};
+    for(const G of "JKL".split(""))
+      rem[G]=ESPN_PAIRS[G].map(([h,a])=>[gmap[h], gmap[a]]);
+
+    const updated=new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
+    if(applyLive({rem})){ scoreChanged(); setLiveStatus("ao vivo · "+updated,"ok"); }
     else setLiveStatus("sem dados — modo manual","warn");
   }catch(e){ setLiveStatus(manual?"sem ligação — manual":"modo manual","warn"); }
 }
@@ -692,7 +713,7 @@ async function _doRefresh(){
 
 /* ===================== ARRANQUE ===================== */
 recompute(); renderInputs(); renderTables(); renderThirds(); renderDist(); renderKnockout();
-if(LIVE_ENABLED) fetchLive(false);
+if(LIVE_ENABLED){ fetchLive(false); setInterval(()=>fetchLive(false), 60000); } // atualiza sozinho de 60 em 60s
 </script>
 </body>
 </html>

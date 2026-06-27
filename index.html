@@ -84,10 +84,19 @@
   .stepper button:disabled{cursor:default;color:var(--dim)}
   .stepper.dis{opacity:.5}
   .stepper .val{min-width:24px;text-align:center;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:16px}
-  .qopp{font-family:"IBM Plex Mono",monospace;font-size:10px;line-height:1.25;color:var(--cyan);margin-top:6px;text-align:center;max-width:100%}
-  .qopp.out{color:var(--dim)}
-  .qopp .qp{color:var(--lime);font-weight:700}
-  .qopp .qt{color:var(--mut)}
+  .qopp{font-family:"IBM Plex Mono",monospace;font-size:10px;line-height:1.3;margin-top:6px;width:100%;max-width:100%}
+  .qopp .oddline{display:flex;align-items:center;justify-content:center;gap:5px;padding:1px 0;color:var(--txt)}
+  .qopp .oddline .f{flex:none}
+  .qopp .oddline .nm{color:var(--mut);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:92px}
+  .qopp .oddline .pct{color:var(--cyan);font-weight:700;flex:none}
+  .qopp .oddline.out .nm{color:var(--dim)}
+  .qopp .oddline.out .pct{color:var(--red)}
+  .qopp .badge{display:inline-flex;align-items:center;gap:5px;justify-content:center;font-weight:700;
+               border:1px solid var(--lime);border-radius:20px;padding:3px 9px;color:var(--lime);background:rgba(198,255,61,.10);max-width:100%}
+  .qopp .badge.outb{border-color:var(--red);color:var(--red);background:rgba(255,86,106,.10)}
+  .qopp .badge .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .grp-time{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700;color:var(--cyan);
+            border:1px solid var(--line2);border-radius:8px;padding:2px 8px;flex:none}
   .liverow{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
   .livestatus{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--mut);padding:3px 9px;border-radius:20px;border:1px solid var(--line2);background:var(--panel2)}
   .livestatus.ok{color:var(--ink);background:var(--lime);border-color:var(--lime)}
@@ -240,14 +249,9 @@
   <main>
     <section class="panel active" id="p-jogos">
       <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Os golos contam (desempatam os terceiros), por isso mete o placar certinho. Por baixo de cada equipa vês o <b>adversário potencial</b> nos playoffs. Liga o <b>live</b> num jogo para o resultado vir do ESPN — os outros mantêm o teu palpite, mesmo ao recarregar.</p>
+      <p class="panel-d">Ordenados por hora de início. Por baixo de cada equipa vês os <b>possíveis adversários nos playoffs</b> e a probabilidade de calhar cada um (ponderada pelo ranking FIFA). As odds ajustam-se à medida que os jogos começam e terminam. Liga o <b>live</b> num jogo para o resultado vir do ESPN — puxa o ecrã para baixo para forçar atualização.</p>
       <div id="inputs"></div>
-      <div class="btnrow">
-        <button class="btn lime" id="btnLikely">📊 Cenário mais provável</button>
-        <button class="btn ghost" id="btnReset">↺ Repor cenário base</button>
-      </div>
-      <div class="hint" id="likelyNote" style="margin-top:4px"></div>
-      <div class="liverow"><button class="btn ghost" id="btnLive">🔄 Atualizar jogos live</button><span class="livestatus" id="liveStatus">modo manual</span></div>
+      <div class="liverow"><span class="livestatus" id="liveStatus">modo manual</span></div>
     </section>
 
     <section class="panel" id="p-grupos">
@@ -426,6 +430,7 @@ let SCORES = JSON.parse(JSON.stringify(DEFAULT));
 let LIVE_ON = { J:[false,false], K:[false,false], L:[false,false] };
 let PICKS = {};
 let CUR = null;
+let ODDS = null;
 
 const LS_KEY="mundial2026:v2";
 function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, live:LIVE_ON})); }catch(e){} }
@@ -437,13 +442,13 @@ function loadState(){
   }catch(e){}
 }
 
-function gWin(L){ return "ABCDEFGHI".includes(L)?FIXED[L].w:CUR.res[L].order[0]; }
-function gRun(L){ return "ABCDEFGHI".includes(L)?FIXED[L].r:CUR.res[L].order[1]; }
-function gThird(L){ return "ABCDEFGHI".includes(L)?FIXED[L].t:CUR.res[L].order[2]; }
+function gWin(L,W){ W=W||CUR; return "ABCDEFGHI".includes(L)?FIXED[L].w:W.res[L].order[0]; }
+function gRun(L,W){ W=W||CUR; return "ABCDEFGHI".includes(L)?FIXED[L].r:W.res[L].order[1]; }
+function gThird(L,W){ W=W||CUR; return "ABCDEFGHI".includes(L)?FIXED[L].t:W.res[L].order[2]; }
 
-function recompute(){
+function computeWorld(scores){   // calcula apuramento + Anexo C para um conjunto de resultados qualquer
   const res={};
-  for(const G of "JKL".split("")) res[G]=rankGroup(GROUPS[G], SCORES[G]);
+  for(const G of "JKL".split("")) res[G]=rankGroup(GROUPS[G], scores[G]);
   const jkl={};
   for(const G of "JKL".split("")){ const th=res[G].order[2]; const s=res[G].stats[th]; jkl[G]={name:th,pts:s.pts,gd:s.gd,gf:s.gf}; }
   const ranked=thirdsRanking(jkl);
@@ -452,8 +457,9 @@ function recompute(){
   const val=ANNEXE[key]||"";
   const slotGroup={}; SLOT_LETTERS.forEach((L,i)=>slotGroup["1"+L]=val[i]);
   const oppOf={};   SLOT_LETTERS.forEach((L,i)=>{ if(val[i]) oppOf[val[i]]="1"+L; });
-  CUR={res,jkl,ranked,qual,key,val,slotGroup,oppOf};
+  return {res,jkl,ranked,qual,key,val,slotGroup,oppOf};
 }
+function recompute(){ CUR=computeWorld(SCORES); }
 
 function resolveSrc(src){
   const p=src.split(":"); const k=p[0], v=p[1];
@@ -468,7 +474,11 @@ function matchWinner(id){ const p=PICKS[id]; if(!p) return null; return resolveS
 function matchLoser(id){  const p=PICKS[id]; if(!p) return null; return resolveSrc(ALLDEF[id][p==='a'?1:0]).name; }
 function clearDescendants(id){ const q=[...(CHILDREN[id]||[])]; while(q.length){ const c=q.shift(); if(PICKS[c]!==undefined) delete PICKS[c]; (CHILDREN[c]||[]).forEach(x=>q.push(x)); } }
 
-/* ============ CENÁRIO MAIS PROVÁVEL (ponderado por ranking FIFA) ============ */
+/* ============ PROBABILIDADES DE ADVERSÁRIO (ponderado por ranking FIFA) ============ */
+const KICKOFF = { L:"2026-06-27T21:00:00Z", K:"2026-06-27T23:30:00Z", J:"2026-06-28T02:00:00Z" };
+function koTs(G){ return Date.parse(KICKOFF[G]); }
+function koLabel(G){ return new Date(koTs(G)).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}); }
+function groupsByKickoff(){ return "JKL".split("").sort((a,b)=>koTs(a)-koTs(b)); }
 function eloRating(t){ const r=Math.min(frank(t),40); return (40-r)*25; }
 function outcomeProbs(h,a){  // [P(casa vence), P(empate), P(fora vence)]
   const Eh=1/(1+Math.pow(10,(eloRating(a)-eloRating(h))/400));
@@ -477,35 +487,45 @@ function outcomeProbs(h,a){  // [P(casa vence), P(empate), P(fora vence)]
   if(pwh<0){pd+=pwh;pwh=0;} if(pwa<0){pd+=pwa;pwa=0;}
   const s=pwh+pd+pwa||1; return [pwh/s, pd/s, pwa/s];
 }
-function bracketSignature(rem){  // identifica o emparelhamento de playoffs resultante
-  const res={}; for(const G of "JKL".split("")) res[G]=rankGroup(GROUPS[G], rem[G]);
-  const jkl={}; for(const G of "JKL".split("")){ const th=res[G].order[2], s=res[G].stats[th]; jkl[G]={name:th,pts:s.pts,gd:s.gd,gf:s.gf}; }
-  const ranked=thirdsRanking(jkl);
-  const qual=ranked.slice(0,8).map(t=>t.grp).sort().join("");
-  const val=ANNEXE[qual]||"";
-  const pos="JKL".split("").map(G=>res[G].order.slice(0,3).join(">")).join("|");
-  return pos+"#"+qual+"#"+val;
+function r32OppName(src, W){  // nome do adversário de 'src' (ex.: "W:J") nos 16-avos, no mundo W
+  const p=src.split(":"), k=p[0], v=p[1];
+  if(k==="W")  return gWin(v,W);
+  if(k==="RU") return gRun(v,W);
+  if(k==="T"){ const L=W.slotGroup[v]; return L?gThird(L,W):null; }
+  return null;
 }
-function mostLikelyScenario(){
-  const games=[]; for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++){ const pr=GROUPS[G].rem[mi]; games.push({G,mi,h:pr[0],a:pr[1],live:LIVE_ON[G][mi]}); }
-  const scoreFor=[[1,0],[1,1],[0,1]];
+function teamOppInWorld(team,G,W){  // adversário nos 16-avos (ou "__OUT__" se não apura)
+  const order=W.res[G].order, pos=order.indexOf(team);
+  if(pos===0){ const m=r32MatchOf("W:"+G);  return m?r32OppName(m.opp,W):null; }
+  if(pos===1){ const m=r32MatchOf("RU:"+G); return m?r32OppName(m.opp,W):null; }
+  if(pos===2){ if(W.qual.includes(G)){ const slot=W.oppOf[G]; return slot?gWin(slot.slice(1),W):null; } return "__OUT__"; }
+  return "__OUT__";
+}
+// Distribuição de adversários por equipa: condiciona nos jogos já começados (hora >= início, com o placar atual),
+// e enumera os restantes ponderando cada resultado pelo ranking FIFA.
+function opponentDistribution(){
+  const now=Date.now();
+  const games=[]; for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++){ const pr=GROUPS[G].rem[mi]; games.push({G,mi,h:pr[0],a:pr[1], started: now>=koTs(G)}); }
   const base={J:[null,null],K:[null,null],L:[null,null]};
-  for(const g of games) if(g.live) base[g.G][g.mi]=SCORES[g.G][g.mi].slice();   // jogos em "live" ficam fixos no resultado real
-  const variable=games.filter(g=>!g.live);
+  for(const g of games) if(g.started) base[g.G][g.mi]=SCORES[g.G][g.mi].slice();
+  const variable=games.filter(g=>!g.started);
   const probs=variable.map(g=>outcomeProbs(g.h,g.a));
-  const k=variable.length, sigMap=new Map(), combos=Math.pow(3,k);
+  const scoreFor=[[1,0],[1,1],[0,1]];
+  const dist={};
+  for(const G of "JKL".split("")) for(const t of GROUPS[G].teams) dist[t]=new Map();
+  const k=variable.length, combos=Math.pow(3,k); let totalW=0;
   for(let mask=0; mask<combos; mask++){
     let w=1,m=mask; const rem=JSON.parse(JSON.stringify(base));
     for(let i=0;i<k;i++){ const o=m%3; m=(m-o)/3; w*=probs[i][o]; const g=variable[i]; rem[g.G][g.mi]=scoreFor[o]; }
     if(w<=0) continue;
-    const sig=bracketSignature(rem);
-    let e=sigMap.get(sig); if(!e){ e={weight:0,best:-1,scores:null}; sigMap.set(sig,e); }
-    e.weight+=w; if(w>e.best){ e.best=w; e.scores=rem; }   // guarda a combinação mais provável dentro deste emparelhamento
+    const W=computeWorld(rem); totalW+=w;
+    for(const G of "JKL".split("")) for(const t of GROUPS[G].teams){
+      const opp=teamOppInWorld(t,G,W); const kk = opp==null ? "__TBD__" : opp;
+      dist[t].set(kk, (dist[t].get(kk)||0)+w);
+    }
   }
-  let bestSig=null,bestW=-1,total=0;
-  for(const [sig,e] of sigMap){ total+=e.weight; if(e.weight>bestW){ bestW=e.weight; bestSig=sig; } }
-  const chosen=bestSig!=null?sigMap.get(bestSig):{scores:JSON.parse(JSON.stringify(SCORES))};
-  return {scores:chosen.scores, prob: total>0?bestW/total:1};
+  for(const t in dist){ const mp=dist[t]; for(const [kk,v] of mp) mp.set(kk, totalW>0?v/totalW:0); }
+  return dist;
 }
 
 /* ===================== RENDER ===================== */
@@ -521,41 +541,39 @@ function r32MatchOf(src){  // encontra o jogo dos 16-avos onde 'src' (ex.: "W:J"
     if(d[0]===src) return {id,opp:d[1]}; if(d[1]===src) return {id,opp:d[0]}; }
   return null;
 }
-function playoffFateOf(team,G){  // posição projetada + adversário potencial nos playoffs
-  const order=CUR.res[G].order, pos=order.indexOf(team);
-  if(pos===0||pos===1){
-    const m=r32MatchOf((pos===0?"W:":"RU:")+G);
-    const o=m?resolveSrc(m.opp):null;
-    return {qualifies:true, posLabel:(pos===0?"1.º":"2.º"), oppRaw:o&&o.name, oppTag:(o&&(o.tag||o.ph))||"a definir"};
+function oddsBlock(team){   // lista de possíveis adversários + probabilidade; badge se já estiver garantido
+  const mp = ODDS && ODDS[team];
+  if(!mp || !mp.size) return `<div class="qopp"></div>`;
+  const entries=[...mp.entries()].filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
+  if(!entries.length) return `<div class="qopp"></div>`;
+  const top=entries[0];
+  if(top[1]>=0.999){   // adversário certo -> badge à volta
+    if(top[0]==="__OUT__") return `<div class="qopp"><span class="badge outb"><span class="nm">não apura</span></span></div>`;
+    if(top[0]==="__TBD__") return `<div class="qopp"><span class="badge"><span class="nm">a definir</span></span></div>`;
+    return `<div class="qopp"><span class="badge">✓ <span class="f">${fl(top[0])}</span><span class="nm">${pt(top[0])}</span></span></div>`;
   }
-  if(pos===2){
-    if(CUR.qual.includes(G)){
-      const slot=CUR.oppOf[G], wl=slot?slot.slice(1):null;
-      return {qualifies:true, posLabel:"3.º", oppRaw:wl?gWin(wl):null, oppTag:wl?("1.º "+wl):"a definir"};
-    }
-    return {qualifies:false, posLabel:"3.º"};
+  let h=`<div class="qopp">`;
+  for(const [k,v] of entries.filter(([k,v])=>v>=0.05).slice(0,4)){
+    const pct=Math.round(v*100)+"%";
+    if(k==="__OUT__")      h+=`<div class="oddline out"><span class="nm">não apura</span><span class="pct">${pct}</span></div>`;
+    else if(k==="__TBD__") h+=`<div class="oddline"><span class="nm">a definir</span><span class="pct">${pct}</span></div>`;
+    else                   h+=`<div class="oddline"><span class="f">${fl(k)}</span><span class="nm">${pt(k)}</span><span class="pct">${pct}</span></div>`;
   }
-  return {qualifies:false, posLabel:"4.º"};
-}
-function qualLine(team,G){
-  const f=playoffFateOf(team,G);
-  if(!f.qualifies) return `<div class="qopp out">${f.posLabel} · não apura</div>`;
-  const tag=`<span class="qt">${f.oppTag}</span>`;
-  if(f.oppRaw) return `<div class="qopp"><span class="qp">${f.posLabel}</span> → ${fl(f.oppRaw)} ${pt(f.oppRaw)} ${tag}</div>`;
-  return `<div class="qopp"><span class="qp">${f.posLabel}</span> → ${tag}</div>`;
+  return h+`</div>`;
 }
 function renderInputs(){
+  ODDS=opponentDistribution();
   let h="";
-  for(const G of "JKL".split("")){
+  for(const G of groupsByKickoff()){
     const g=GROUPS[G];
     h+=`<div class="card"><div class="grp-h"><div class="grp-badge">${G}</div>
-      <div><div class="nm">Grupo ${G}</div><div class="sm">faltam 2 jogos</div></div></div>`;
+      <div><div class="nm">Grupo ${G}</div><div class="sm">2 jogos em simultâneo</div></div><span class="grp-time">⏱ ${koLabel(G)}</span></div>`;
     for(let mi=0;mi<2;mi++){
       const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi], on=LIVE_ON[G][mi];
       h+=`<div class="match2">
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],on)}${qualLine(home,G)}</div>
+        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],on)}${oddsBlock(home)}</div>
         <div class="mmid"><span class="mx">×</span><button class="livetog ${on?'on':''}" data-g="${G}" data-m="${mi}" data-live="1" aria-pressed="${on}">${on?'● LIVE':'live'}</button></div>
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],on)}${qualLine(away,G)}</div>
+        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],on)}${oddsBlock(away)}</div>
       </div>`;
     }
     h+=`</div>`;
@@ -668,7 +686,6 @@ function renderKnockout(){
 
 /* ===================== EVENTOS ===================== */
 function scoreChanged(){ PICKS={}; recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout(); saveState(); }
-function setLikelyNote(txt){ const n=document.getElementById("likelyNote"); if(n) n.textContent=txt||""; }
 function toggleLive(G,mi){ LIVE_ON[G][mi]=!LIVE_ON[G][mi]; saveState(); renderInputs(); if(LIVE_ON[G][mi]) fetchLive(true); }
 
 document.getElementById("inputs").addEventListener("click",e=>{
@@ -677,7 +694,7 @@ document.getElementById("inputs").addEventListener("click",e=>{
   const b=e.target.closest("button[data-d]"); if(!b||b.disabled) return;
   const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d;
   let v=SCORES[G][mi][side]+d; if(v<0)v=0; if(v>19)v=19;
-  SCORES[G][mi][side]=v; setLikelyNote(""); scoreChanged();
+  SCORES[G][mi][side]=v; scoreChanged();
 });
 document.getElementById("knockout").addEventListener("click",e=>{
   const b=e.target.closest("button.koteam"); if(!b||b.disabled) return;
@@ -685,12 +702,6 @@ document.getElementById("knockout").addEventListener("click",e=>{
   if(PICKS[id]===side) delete PICKS[id]; else PICKS[id]=side;
   clearDescendants(id); renderKnockout();
 });
-document.getElementById("btnLikely").addEventListener("click",()=>{
-  const {scores,prob}=mostLikelyScenario();
-  SCORES=scores; scoreChanged();
-  setLikelyNote(`Cenário mais provável aplicado · este quadro sai em ~${Math.round(prob*100)}% das combinações (ponderado pelo ranking FIFA).`);
-});
-document.getElementById("btnReset").addEventListener("click",()=>{ SCORES=JSON.parse(JSON.stringify(DEFAULT)); setLikelyNote(""); scoreChanged(); });
 document.getElementById("btnKoReset").addEventListener("click",()=>{ PICKS={}; renderKnockout(); });
 
 /* tabs */
@@ -758,7 +769,7 @@ async function fetchLive(manual){
     setLiveStatus("ao vivo · "+updated,"ok");
   }catch(e){ setLiveStatus(manual?"sem ligação — tenta de novo":"sem ligação","warn"); }
 }
-document.getElementById("btnLive").addEventListener("click",()=>fetchLive(true));
+/* botão "atualizar live" removido — o pull-to-refresh (puxar o ecrã) faz o mesmo */
 
 /* ---- puxar para atualizar (pull-to-refresh, data-only) ---- */
 let _ptrY=null,_ptrOn=false,_ptrD=0,_refreshing=false;
@@ -797,6 +808,7 @@ async function _doRefresh(){
 loadState();
 recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout();
 if(LIVE_ENABLED){ fetchLive(false); setInterval(()=>fetchLive(false), 60000); } // só atualiza os jogos com "live" ligado
+setInterval(renderInputs, 60000); // refresca odds + barreira "a partir da hora de início"
 </script>
 </body>
 </html>

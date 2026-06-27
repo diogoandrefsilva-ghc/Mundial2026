@@ -70,12 +70,24 @@
   .tlabel{display:flex;align-items:center;gap:6px;min-width:0;max-width:100%}
   .tlabel .flag2{font-size:18px;line-height:1;flex:none}
   .tlabel .tn2{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .mmid{flex:none;color:var(--dim);font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700}
+  .mmid{flex:none;display:flex;flex-direction:column;align-items:center;gap:7px}
+  .mmid .mx{color:var(--dim);font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:700}
+  .livetog{appearance:none;border:1px solid var(--line2);background:var(--panel2);color:var(--mut);
+           font-family:"IBM Plex Mono",monospace;font-size:9px;font-weight:700;letter-spacing:.5px;
+           padding:3px 8px;border-radius:20px;cursor:pointer;white-space:nowrap}
+  .livetog.on{background:var(--cyan);color:var(--ink);border-color:var(--cyan)}
+  .livetog:focus-visible{outline:2px solid var(--cyan);outline-offset:2px}
   .stepper{display:flex;align-items:center;background:var(--ink);border:1px solid var(--line2);border-radius:10px;overflow:hidden}
   .stepper button{appearance:none;border:0;background:transparent;color:var(--txt);font-size:17px;font-weight:700;
                   width:32px;height:32px;cursor:pointer;line-height:1;display:grid;place-items:center}
   .stepper button:active{background:var(--raise)}
+  .stepper button:disabled{cursor:default;color:var(--dim)}
+  .stepper.dis{opacity:.5}
   .stepper .val{min-width:24px;text-align:center;font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:16px}
+  .qopp{font-family:"IBM Plex Mono",monospace;font-size:10px;line-height:1.25;color:var(--cyan);margin-top:6px;text-align:center;max-width:100%}
+  .qopp.out{color:var(--dim)}
+  .qopp .qp{color:var(--lime);font-weight:700}
+  .qopp .qt{color:var(--mut)}
   .liverow{display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap}
   .livestatus{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--mut);padding:3px 9px;border-radius:20px;border:1px solid var(--line2);background:var(--panel2)}
   .livestatus.ok{color:var(--ink);background:var(--lime);border-color:var(--lime)}
@@ -228,13 +240,14 @@
   <main>
     <section class="panel active" id="p-jogos">
       <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Os golos contam (desempatam os terceiros), por isso mete o placar certinho.</p>
+      <p class="panel-d">Os golos contam (desempatam os terceiros), por isso mete o placar certinho. Por baixo de cada equipa vês o <b>adversário potencial</b> nos playoffs. Liga o <b>live</b> num jogo para o resultado vir do ESPN — os outros mantêm o teu palpite, mesmo ao recarregar.</p>
       <div id="inputs"></div>
       <div class="btnrow">
-        <button class="btn lime" id="btnRandom">🎲 Sortear resultados</button>
+        <button class="btn lime" id="btnLikely">📊 Cenário mais provável</button>
         <button class="btn ghost" id="btnReset">↺ Repor cenário base</button>
       </div>
-      <div class="liverow"><button class="btn ghost" id="btnLive">🔄 Obter resultados ao vivo</button><span class="livestatus" id="liveStatus">modo manual</span></div>
+      <div class="hint" id="likelyNote" style="margin-top:4px"></div>
+      <div class="liverow"><button class="btn ghost" id="btnLive">🔄 Atualizar jogos live</button><span class="livestatus" id="liveStatus">modo manual</span></div>
     </section>
 
     <section class="panel" id="p-grupos">
@@ -249,11 +262,8 @@
 
     <section class="panel" id="p-terceiros">
       <h2 class="panel-h">Os melhores terceiros</h2>
-      <p class="panel-d">Ordenam-se por: pontos · DG · golos marcados · (fair-play) · ranking FIFA. Passam os <b>8 primeiros</b>.</p>
+      <p class="panel-d">Ordenam-se por: pontos · DG · golos marcados · (fair-play) · ranking FIFA. Passam os <b>8 primeiros</b>. O adversário indicado é o 1.º de grupo que cada um enfrenta nos 16-avos.</p>
       <div id="thirds"></div>
-      <h3 class="subh">Distribuição nos 16-avos</h3>
-      <p class="panel-d">Tabela fixa da FIFA (Anexo C): conforme <i>quais</i> os 8 grupos com terceiro apurado, cada um cai num cruzamento já definido.</p>
-      <div class="card" id="dist"></div>
     </section>
 
     <section class="panel" id="p-playoffs">
@@ -413,8 +423,19 @@ const ROUNDS=[
 
 /* ============ ESTADO ============ */
 let SCORES = JSON.parse(JSON.stringify(DEFAULT));
+let LIVE_ON = { J:[false,false], K:[false,false], L:[false,false] };
 let PICKS = {};
 let CUR = null;
+
+const LS_KEY="mundial2026:v2";
+function saveState(){ try{ localStorage.setItem(LS_KEY, JSON.stringify({scores:SCORES, live:LIVE_ON})); }catch(e){} }
+function loadState(){
+  try{
+    const o=JSON.parse(localStorage.getItem(LS_KEY)||"null"); if(!o) return;
+    if(o.scores) for(const G of "JKL".split("")){ if(Array.isArray(o.scores[G])) for(let mi=0;mi<2;mi++){ const s=o.scores[G][mi]; if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])) SCORES[G][mi]=[s[0]|0,s[1]|0]; } }
+    if(o.live)   for(const G of "JKL".split("")){ if(Array.isArray(o.live[G]))   for(let mi=0;mi<2;mi++) LIVE_ON[G][mi]=!!o.live[G][mi]; }
+  }catch(e){}
+}
 
 function gWin(L){ return "ABCDEFGHI".includes(L)?FIXED[L].w:CUR.res[L].order[0]; }
 function gRun(L){ return "ABCDEFGHI".includes(L)?FIXED[L].r:CUR.res[L].order[1]; }
@@ -447,12 +468,81 @@ function matchWinner(id){ const p=PICKS[id]; if(!p) return null; return resolveS
 function matchLoser(id){  const p=PICKS[id]; if(!p) return null; return resolveSrc(ALLDEF[id][p==='a'?1:0]).name; }
 function clearDescendants(id){ const q=[...(CHILDREN[id]||[])]; while(q.length){ const c=q.shift(); if(PICKS[c]!==undefined) delete PICKS[c]; (CHILDREN[c]||[]).forEach(x=>q.push(x)); } }
 
+/* ============ CENÁRIO MAIS PROVÁVEL (ponderado por ranking FIFA) ============ */
+function eloRating(t){ const r=Math.min(frank(t),40); return (40-r)*25; }
+function outcomeProbs(h,a){  // [P(casa vence), P(empate), P(fora vence)]
+  const Eh=1/(1+Math.pow(10,(eloRating(a)-eloRating(h))/400));
+  let pd=0.27*(1-Math.abs(2*Eh-1));         // empate mais provável quando estão equilibradas
+  let pwh=Eh-pd/2, pwa=(1-Eh)-pd/2;
+  if(pwh<0){pd+=pwh;pwh=0;} if(pwa<0){pd+=pwa;pwa=0;}
+  const s=pwh+pd+pwa||1; return [pwh/s, pd/s, pwa/s];
+}
+function bracketSignature(rem){  // identifica o emparelhamento de playoffs resultante
+  const res={}; for(const G of "JKL".split("")) res[G]=rankGroup(GROUPS[G], rem[G]);
+  const jkl={}; for(const G of "JKL".split("")){ const th=res[G].order[2], s=res[G].stats[th]; jkl[G]={name:th,pts:s.pts,gd:s.gd,gf:s.gf}; }
+  const ranked=thirdsRanking(jkl);
+  const qual=ranked.slice(0,8).map(t=>t.grp).sort().join("");
+  const val=ANNEXE[qual]||"";
+  const pos="JKL".split("").map(G=>res[G].order.slice(0,3).join(">")).join("|");
+  return pos+"#"+qual+"#"+val;
+}
+function mostLikelyScenario(){
+  const games=[]; for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++){ const pr=GROUPS[G].rem[mi]; games.push({G,mi,h:pr[0],a:pr[1],live:LIVE_ON[G][mi]}); }
+  const scoreFor=[[1,0],[1,1],[0,1]];
+  const base={J:[null,null],K:[null,null],L:[null,null]};
+  for(const g of games) if(g.live) base[g.G][g.mi]=SCORES[g.G][g.mi].slice();   // jogos em "live" ficam fixos no resultado real
+  const variable=games.filter(g=>!g.live);
+  const probs=variable.map(g=>outcomeProbs(g.h,g.a));
+  const k=variable.length, sigMap=new Map(), combos=Math.pow(3,k);
+  for(let mask=0; mask<combos; mask++){
+    let w=1,m=mask; const rem=JSON.parse(JSON.stringify(base));
+    for(let i=0;i<k;i++){ const o=m%3; m=(m-o)/3; w*=probs[i][o]; const g=variable[i]; rem[g.G][g.mi]=scoreFor[o]; }
+    if(w<=0) continue;
+    const sig=bracketSignature(rem);
+    let e=sigMap.get(sig); if(!e){ e={weight:0,best:-1,scores:null}; sigMap.set(sig,e); }
+    e.weight+=w; if(w>e.best){ e.best=w; e.scores=rem; }   // guarda a combinação mais provável dentro deste emparelhamento
+  }
+  let bestSig=null,bestW=-1,total=0;
+  for(const [sig,e] of sigMap){ total+=e.weight; if(e.weight>bestW){ bestW=e.weight; bestSig=sig; } }
+  const chosen=bestSig!=null?sigMap.get(bestSig):{scores:JSON.parse(JSON.stringify(SCORES))};
+  return {scores:chosen.scores, prob: total>0?bestW/total:1};
+}
+
 /* ===================== RENDER ===================== */
-function stepper(G,mi,side,val){
-  return `<div class="stepper">
-    <button data-g="${G}" data-m="${mi}" data-s="${side}" data-d="-1" aria-label="menos um golo">−</button>
+function stepper(G,mi,side,val,dis){
+  const d=dis?"disabled":"";
+  return `<div class="stepper${dis?' dis':''}">
+    <button ${d} data-g="${G}" data-m="${mi}" data-s="${side}" data-d="-1" aria-label="menos um golo">−</button>
     <span class="val">${val}</span>
-    <button data-g="${G}" data-m="${mi}" data-s="${side}" data-d="1" aria-label="mais um golo">+</button></div>`;
+    <button ${d} data-g="${G}" data-m="${mi}" data-s="${side}" data-d="1" aria-label="mais um golo">+</button></div>`;
+}
+function r32MatchOf(src){  // encontra o jogo dos 16-avos onde 'src' (ex.: "W:J") joga e devolve o adversário
+  for(const id in R32DEF){ const d=R32DEF[id];
+    if(d[0]===src) return {id,opp:d[1]}; if(d[1]===src) return {id,opp:d[0]}; }
+  return null;
+}
+function playoffFateOf(team,G){  // posição projetada + adversário potencial nos playoffs
+  const order=CUR.res[G].order, pos=order.indexOf(team);
+  if(pos===0||pos===1){
+    const m=r32MatchOf((pos===0?"W:":"RU:")+G);
+    const o=m?resolveSrc(m.opp):null;
+    return {qualifies:true, posLabel:(pos===0?"1.º":"2.º"), oppRaw:o&&o.name, oppTag:(o&&(o.tag||o.ph))||"a definir"};
+  }
+  if(pos===2){
+    if(CUR.qual.includes(G)){
+      const slot=CUR.oppOf[G], wl=slot?slot.slice(1):null;
+      return {qualifies:true, posLabel:"3.º", oppRaw:wl?gWin(wl):null, oppTag:wl?("1.º "+wl):"a definir"};
+    }
+    return {qualifies:false, posLabel:"3.º"};
+  }
+  return {qualifies:false, posLabel:"4.º"};
+}
+function qualLine(team,G){
+  const f=playoffFateOf(team,G);
+  if(!f.qualifies) return `<div class="qopp out">${f.posLabel} · não apura</div>`;
+  const tag=`<span class="qt">${f.oppTag}</span>`;
+  if(f.oppRaw) return `<div class="qopp"><span class="qp">${f.posLabel}</span> → ${fl(f.oppRaw)} ${pt(f.oppRaw)} ${tag}</div>`;
+  return `<div class="qopp"><span class="qp">${f.posLabel}</span> → ${tag}</div>`;
 }
 function renderInputs(){
   let h="";
@@ -461,11 +551,11 @@ function renderInputs(){
     h+=`<div class="card"><div class="grp-h"><div class="grp-badge">${G}</div>
       <div><div class="nm">Grupo ${G}</div><div class="sm">faltam 2 jogos</div></div></div>`;
     for(let mi=0;mi<2;mi++){
-      const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi];
+      const home=g.rem[mi][0], away=g.rem[mi][1], sc=SCORES[G][mi], on=LIVE_ON[G][mi];
       h+=`<div class="match2">
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0])}</div>
-        <div class="mmid">×</div>
-        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1])}</div>
+        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],on)}${qualLine(home,G)}</div>
+        <div class="mmid"><span class="mx">×</span><button class="livetog ${on?'on':''}" data-g="${G}" data-m="${mi}" data-live="1" aria-pressed="${on}">${on?'● LIVE':'live'}</button></div>
+        <div class="tcol"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],on)}${qualLine(away,G)}</div>
       </div>`;
     }
     h+=`</div>`;
@@ -510,7 +600,7 @@ function renderThirds(){
     if(i===8) h+=`<div class="cutline">LINHA DE CORTE · passam os 8 melhores</div>`;
     const slot=CUR.oppOf[t.grp];
     let opp;
-    if(inq && slot){ const wl=slot.slice(1); opp=`→ 1.º ${wl} · ${pt(gWin(wl))}`; }
+    if(inq && slot){ const wl=slot.slice(1); const w=gWin(wl); opp=`→ ${fl(w)} ${pt(w)} · 1.º ${wl}`; }
     else opp="fora do apuramento";
     const por=t.name===POR?" por":"";
     h+=`<div class="third ${inq?'in':'out'}${por}">
@@ -523,23 +613,7 @@ function renderThirds(){
   });
   document.getElementById("thirds").innerHTML=h;
 }
-function renderDist(){
-  const box=document.getElementById("dist");
-  if(!CUR.val){ box.innerHTML="<p style='color:var(--mut);margin:0'>Sem distribuição disponível.</p>"; return; }
-  let h=`<div class="dist">`;
-  SLOT_LETTERS.forEach((wl,i)=>{
-    const tg=CUR.val[i]; const mj=SLOT_MATCH[i].slice(1);
-    const w=gWin(wl), th=gThird(tg);
-    const porW=w===POR?"color:var(--gold)":"", porT=th===POR?"color:var(--gold)":"";
-    h+=`<div class="dpair">
-      <span class="mj">Jogo ${mj}</span>
-      <span class="w"><span class="ef">${fl(w)}</span><span style="${porW}">${pt(w)}</span> <span class="lab" style="color:var(--cyan)">1.º ${wl}</span></span>
-      <span class="arrow">⟶</span>
-      <span class="t3"><span class="lab">3.º ${tg}</span> <span style="${porT}">${pt(th)}</span><span class="ef">${fl(th)}</span></span>
-    </div>`;
-  });
-  box.innerHTML=h+`</div>`;
-}
+/* (removido) Distribuição nos 16-avos */
 
 /* --- BRACKET --- */
 const COLS=[
@@ -593,14 +667,17 @@ function renderKnockout(){
 }
 
 /* ===================== EVENTOS ===================== */
-function scoreChanged(){ PICKS={}; recompute(); renderInputs(); renderTables(); renderThirds(); renderDist(); renderKnockout(); }
-function rnd(){ return Math.floor(Math.random()*5); }
+function scoreChanged(){ PICKS={}; recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout(); saveState(); }
+function setLikelyNote(txt){ const n=document.getElementById("likelyNote"); if(n) n.textContent=txt||""; }
+function toggleLive(G,mi){ LIVE_ON[G][mi]=!LIVE_ON[G][mi]; saveState(); renderInputs(); if(LIVE_ON[G][mi]) fetchLive(true); }
 
 document.getElementById("inputs").addEventListener("click",e=>{
-  const b=e.target.closest("button[data-g]"); if(!b) return;
+  const lv=e.target.closest("button[data-live]");
+  if(lv){ toggleLive(lv.dataset.g, +lv.dataset.m); return; }
+  const b=e.target.closest("button[data-d]"); if(!b||b.disabled) return;
   const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d;
   let v=SCORES[G][mi][side]+d; if(v<0)v=0; if(v>19)v=19;
-  SCORES[G][mi][side]=v; scoreChanged();
+  SCORES[G][mi][side]=v; setLikelyNote(""); scoreChanged();
 });
 document.getElementById("knockout").addEventListener("click",e=>{
   const b=e.target.closest("button.koteam"); if(!b||b.disabled) return;
@@ -608,11 +685,12 @@ document.getElementById("knockout").addEventListener("click",e=>{
   if(PICKS[id]===side) delete PICKS[id]; else PICKS[id]=side;
   clearDescendants(id); renderKnockout();
 });
-document.getElementById("btnRandom").addEventListener("click",()=>{
-  for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++) SCORES[G][mi]=[rnd(),rnd()];
-  scoreChanged();
+document.getElementById("btnLikely").addEventListener("click",()=>{
+  const {scores,prob}=mostLikelyScenario();
+  SCORES=scores; scoreChanged();
+  setLikelyNote(`Cenário mais provável aplicado · este quadro sai em ~${Math.round(prob*100)}% das combinações (ponderado pelo ranking FIFA).`);
 });
-document.getElementById("btnReset").addEventListener("click",()=>{ SCORES=JSON.parse(JSON.stringify(DEFAULT)); scoreChanged(); });
+document.getElementById("btnReset").addEventListener("click",()=>{ SCORES=JSON.parse(JSON.stringify(DEFAULT)); setLikelyNote(""); scoreChanged(); });
 document.getElementById("btnKoReset").addEventListener("click",()=>{ PICKS={}; renderKnockout(); });
 
 /* tabs */
@@ -641,15 +719,19 @@ function applyLive(data){
   for(const G of "JKL".split("")){
     const arr=rem[G]; if(!Array.isArray(arr)) continue;
     for(let mi=0;mi<2;mi++){
+      if(!LIVE_ON[G][mi]) continue;                 // só jogos com "live" ligado
       const s=arr[mi];
       if(Array.isArray(s)&&Number.isFinite(s[0])&&Number.isFinite(s[1])){
-        SCORES[G][mi]=[Math.max(0,s[0]|0),Math.max(0,s[1]|0)]; changed=true;
+        const nv=[Math.max(0,s[0]|0),Math.max(0,s[1]|0)], cur=SCORES[G][mi];
+        if(cur[0]!==nv[0]||cur[1]!==nv[1]){ SCORES[G][mi]=nv; changed=true; }   // só recalcula se mudou mesmo
       }
     }
   }
   return changed;
 }
 async function fetchLive(manual){
+  const anyLive = LIVE_ON.J.concat(LIVE_ON.K, LIVE_ON.L).some(Boolean);
+  if(!anyLive){ setLiveStatus("modo manual","warn"); return; }
   setLiveStatus("a obter…","load");
   try{
     const ctrl=new AbortController(); const tm=setTimeout(()=>ctrl.abort(),6000);
@@ -672,9 +754,9 @@ async function fetchLive(manual){
       rem[G]=ESPN_PAIRS[G].map(([h,a])=>[gmap[h], gmap[a]]);
 
     const updated=new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
-    if(applyLive({rem})){ scoreChanged(); setLiveStatus("ao vivo · "+updated,"ok"); }
-    else setLiveStatus("sem dados — modo manual","warn");
-  }catch(e){ setLiveStatus(manual?"sem ligação — manual":"modo manual","warn"); }
+    if(applyLive({rem})) scoreChanged();
+    setLiveStatus("ao vivo · "+updated,"ok");
+  }catch(e){ setLiveStatus(manual?"sem ligação — tenta de novo":"sem ligação","warn"); }
 }
 document.getElementById("btnLive").addEventListener("click",()=>fetchLive(true));
 
@@ -712,8 +794,9 @@ async function _doRefresh(){
 }
 
 /* ===================== ARRANQUE ===================== */
-recompute(); renderInputs(); renderTables(); renderThirds(); renderDist(); renderKnockout();
-if(LIVE_ENABLED){ fetchLive(false); setInterval(()=>fetchLive(false), 60000); } // atualiza sozinho de 60 em 60s
+loadState();
+recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout();
+if(LIVE_ENABLED){ fetchLive(false); setInterval(()=>fetchLive(false), 60000); } // só atualiza os jogos com "live" ligado
 </script>
 </body>
 </html>

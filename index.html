@@ -548,12 +548,15 @@ function opponentDistribution(){
     games.push({G,mi,h:pr[0],a:pr[1], state, minute:lv.minute||0, score:SCORES[G][mi].slice()});
   }
   const outs=games.map(gameOutcomes);
-  const PRUNE=1e-5, MAXSC=4000;
+  // Beam search: guardamos sempre os MAXSC cenários mais prováveis. NÃO podamos
+  // por peso absoluto — o peso é o produto de 6 jogos e encolhe sempre, logo um
+  // limiar fixo esvaziaria a distribuição toda.
+  const MAXSC=4000;
   let scen=[{rem:{J:[null,null],K:[null,null],L:[null,null]}, w:1}];
   for(let gi=0; gi<games.length; gi++){
     const g=games[gi], ol=outs[gi], next=[];
     for(const s of scen) for(const o of ol){
-      const w=s.w*o.w; if(w<PRUNE) continue;
+      const w=s.w*o.w; if(w<=0) continue;
       const rem=JSON.parse(JSON.stringify(s.rem)); rem[g.G][g.mi]=o.s.slice();
       next.push({rem, w});
     }

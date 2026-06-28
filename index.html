@@ -242,6 +242,71 @@
   .ptr-spin{width:18px;height:18px;border:2px solid var(--line2);border-top-color:var(--cyan);border-radius:50%;flex:none}
   .ptr.spin .ptr-spin{animation:spin .7s linear infinite}
   @keyframes spin{to{transform:rotate(360deg)}}
+  /* ---- SELEÇÃO / PERCURSO ---- */
+  .teampick{display:flex;align-items:center;gap:10px;margin:0 0 16px}
+  .teampick label{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:1px;color:var(--mut);text-transform:uppercase;flex:none}
+  .teampick select{flex:1;min-width:0;appearance:none;-webkit-appearance:none;background:var(--raise);color:var(--txt);
+    border:1px solid var(--line2);border-radius:11px;padding:11px 38px 11px 13px;font-family:Inter,sans-serif;font-weight:700;font-size:15px;
+    min-height:46px;cursor:pointer;
+    background-image:linear-gradient(45deg,transparent 50%,var(--mut) 50%),linear-gradient(135deg,var(--mut) 50%,transparent 50%);
+    background-position:calc(100% - 18px) 50%,calc(100% - 13px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat}
+  .teampick select:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+
+  .teamhero{display:flex;align-items:center;gap:13px;padding:14px;border:1px solid var(--line);border-radius:14px;
+    background:linear-gradient(180deg,var(--panel),var(--panel2));margin-bottom:14px}
+  .teamhero .bigfl{font-size:38px;line-height:1;flex:none}
+  .teamhero .meta{flex:1;min-width:0}
+  .teamhero .nm{font-family:Anton,sans-serif;font-size:24px;text-transform:uppercase;letter-spacing:.5px;line-height:1}
+  .teamhero .nm.por{color:var(--gold)}
+  .teamhero .gl{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--mut);margin-top:3px}
+  .teamhero .gl b{color:var(--txt)}
+  .teamhero.out .nm{color:var(--mut)}
+  .teamhero .seedtag{font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:700;letter-spacing:.5px;
+    border:1px solid var(--cyan);color:var(--cyan);border-radius:20px;padding:3px 9px;flex:none}
+  .teamhero.out .seedtag{border-color:var(--red);color:var(--red)}
+
+  .stagewrap{position:relative;margin-left:6px}
+  .stage{position:relative;border-left:2px solid var(--line2);padding:0 0 16px 18px;margin-left:6px}
+  .stage:last-child{border-left-color:transparent}
+  .stage::before{content:"";position:absolute;left:-7px;top:3px;width:12px;height:12px;border-radius:50%;
+    background:var(--panel2);border:2px solid var(--line2)}
+  .stage.done::before{background:var(--lime);border-color:var(--lime)}
+  .stage.reachable::before{background:var(--cyan);border-color:var(--cyan)}
+  .stage.gone::before{background:var(--panel2);border-color:var(--red)}
+  .stage .sh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-bottom:2px}
+  .stage .sr{font-family:Anton,sans-serif;font-size:16px;text-transform:uppercase;letter-spacing:.4px}
+  .stage .reach{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:700;color:var(--cyan);
+    border:1px solid var(--line2);border-radius:20px;padding:1px 8px}
+  .stage .reach.hi{color:var(--ink);background:var(--lime);border-color:var(--lime)}
+  .stage .reach.done{color:var(--ink);background:var(--lime);border-color:var(--lime)}
+  .stage .reach.gone{color:var(--red);border-color:rgba(255,86,106,.4)}
+  .stage .when{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--mut);margin:1px 0 8px}
+  .stage .when .v{color:var(--txt)}
+
+  .oppwrap{display:flex;flex-direction:column;gap:5px}
+  .oppline{display:flex;align-items:center;gap:9px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 11px}
+  .oppline.cert{border-color:rgba(198,255,61,.35);background:linear-gradient(90deg,rgba(198,255,61,.08),transparent)}
+  .oppline.por{border-color:var(--gold)}
+  .oppline .of{font-size:18px;flex:none}
+  .oppline .on{flex:1;min-width:0;font-weight:600;font-size:13.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .oppline.por .on{color:var(--gold)}
+  .oppline .obar{position:relative;flex:1;max-width:120px;height:7px;border-radius:5px;background:var(--ink);overflow:hidden;flex:none}
+  .oppline .obar > i{position:absolute;left:0;top:0;bottom:0;background:var(--rgrad);border-radius:5px}
+  .oppline .op{font-family:"IBM Plex Mono",monospace;font-weight:700;font-size:12.5px;color:var(--cyan);width:42px;text-align:right;flex:none}
+  .oppline.cert .op{color:var(--lime)}
+  .oppmore{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--dim);padding:2px 2px 0}
+  .stage.gone .oppwrap{opacity:.5}
+  .resultline{display:inline-flex;align-items:center;gap:8px;font-family:"IBM Plex Mono",monospace;font-size:12px;
+    color:var(--mut);background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:7px 11px}
+  .resultline .wl{font-weight:700}
+  .resultline .wl.adv{color:var(--lime)} .resultline .wl.out{color:var(--red)}
+  .champline{display:flex;align-items:center;gap:11px;justify-content:center;margin-top:4px;padding:13px;
+    border:1px solid var(--gold);border-radius:14px;background:linear-gradient(180deg,rgba(255,200,61,.14),var(--panel2))}
+  .champline .cup{font-size:24px}
+  .champline .ct{font-family:Anton,sans-serif;font-size:18px;text-transform:uppercase;letter-spacing:.5px}
+  .champline .cp{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--gold);font-weight:700}
+  .pickhint{color:var(--mut);font-size:13px;text-align:center;padding:26px 10px}
+
   @media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
@@ -251,36 +316,32 @@
   <header>
     <div class="topbar"></div>
     <h1>Simulador<span class="y">Mundial 2026</span></h1>
-    <p class="sub">Faltam <b>6 jogos</b> da fase de grupos (J, K e L). Mexe nos resultados e vê como muda o apuramento dos terceiros e todo o quadro a eliminar.</p>
+    <p class="sub">Fase de grupos <b>terminada</b>. Escolhe a tua seleção e vê o percurso já feito e o caminho potencial até à final — adversários possíveis em cada fase, com a probabilidade de cada um.</p>
   </header>
 
   <nav class="tabs">
-    <button class="tab active" data-tab="jogos">Jogos</button>
+    <button class="tab active" data-tab="selecao">Seleção</button>
     <button class="tab" data-tab="grupos">Grupos</button>
     <button class="tab" data-tab="terceiros">3.º Classif.</button>
     <button class="tab" data-tab="playoffs">Playoffs</button>
   </nav>
 
   <main>
-    <section class="panel active" id="p-jogos">
-      <h2 class="panel-h">Os 6 jogos que faltam</h2>
-      <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> cada jogo segue o live (<b>● LIVE</b>); toca no selo para o passares a <b>✎ MANUAL</b> e definires tu o resultado (+/−), e toca outra vez para voltar ao live — vês o adversário que daí sai. Em Probabilidades o placar vem sempre do ESPN — puxa o ecrã para baixo para atualizar.</p>
-      <div class="oddsmode">
-        <button class="omode" data-view="prob">Probabilidades</button>
-        <button class="omode" data-view="result">Com este resultado</button>
+    <section class="panel active" id="p-selecao">
+      <h2 class="panel-h">O percurso da tua seleção</h2>
+      <p class="panel-d">Escolhe uma seleção e vê o que já fez na fase de grupos e o caminho potencial no mata-eliminatórias. Em cada fase indicamos a <b>data e o estádio</b>, a probabilidade de lá chegar e os <b>adversários possíveis</b> com a respetiva chance (ponderada pelo ranking FIFA).</p>
+      <div class="teampick">
+        <label for="teamSel">Seleção</label>
+        <select id="teamSel" aria-label="Escolher seleção"></select>
       </div>
-      <div id="inputs"></div>
+      <div id="teamPath"></div>
       <div class="liverow"><span class="livestatus" id="liveStatus">a sincronizar…</span></div>
     </section>
 
     <section class="panel" id="p-grupos">
-      <h2 class="panel-h">Como ficam os grupos</h2>
-      <p class="panel-d">Desempate 2026: 1.º confronto directo · 2.º DG no confronto · 3.º golos no confronto · depois DG e golos gerais.</p>
-      <div id="tablesJKL"></div>
-      <details class="card" style="margin-top:6px">
-        <summary style="cursor:pointer;font-weight:600;color:var(--mut)">Grupos A–I (já fechados) ▾</summary>
-        <div class="aigrid" id="tablesAI" style="margin-top:12px"></div>
-      </details>
+      <h2 class="panel-h">Como ficaram os grupos</h2>
+      <p class="panel-d">Classificação final dos 12 grupos. Passam os <b>2 primeiros</b> de cada grupo e os <b>8 melhores terceiros</b>. Desempate 2026: confronto directo · DG no confronto · golos no confronto · depois DG e golos gerais.</p>
+      <div id="tablesAll"></div>
     </section>
 
     <section class="panel" id="p-terceiros">
@@ -324,7 +385,10 @@ const T = {
   "France":["França","🇫🇷"],"Norway":["Noruega","🇳🇴"],"Senegal":["Senegal","🇸🇳"],
   "Argentina":["Argentina","🇦🇷"],"Austria":["Áustria","🇦🇹"],"Algeria":["Argélia","🇩🇿"],"Jordan":["Jordânia","🇯🇴"],
   "Colombia":["Colômbia","🇨🇴"],"Portugal":["Portugal","🇵🇹"],"DR Congo":["RD Congo","🇨🇩"],"Uzbekistan":["Usbequistão","🇺🇿"],
-  "England":["Inglaterra","🏴󠁧󠁢󠁥󠁮󠁧󠁿"],"Ghana":["Gana","🇬🇭"],"Croatia":["Croácia","🇭🇷"],"Panama":["Panamá","🇵🇦"]
+  "England":["Inglaterra","🏴󠁧󠁢󠁥󠁮󠁧󠁿"],"Ghana":["Gana","🇬🇭"],"Croatia":["Croácia","🇭🇷"],"Panama":["Panamá","🇵🇦"],
+  "Czechia":["Chéquia","🇨🇿"],"Qatar":["Catar","🇶🇦"],"Haiti":["Haiti","🇭🇹"],"Turkey":["Turquia","🇹🇷"],
+  "Curacao":["Curaçao","🇨🇼"],"Tunisia":["Tunísia","🇹🇳"],"New Zealand":["Nova Zelândia","🇳🇿"],
+  "Saudi Arabia":["Arábia Saudita","🇸🇦"],"Iraq":["Iraque","🇮🇶"]
 };
 const pt = n => (T[n]?T[n][0]:n);
 const fl = n => (T[n]?T[n][1]:"🏳️");
@@ -444,6 +508,188 @@ const ROUNDS=[
   {name:"Final & 3.º/4.º lugar", sub:"o título em jogo", ids:["M104","M103"], two:true}
 ];
 
+/* ============ 4.º CLASSIFICADOS + CLASSIFICAÇÕES FINAIS A–I (fonte de recurso) ============ */
+// Os grupos A–I já estavam fechados; J/K/L são calculados pelo motor a partir do live.
+// AI_TABLE é a classificação final (ordem 1→4) usada quando o ESPN não está acessível;
+// o live do ESPN completa/atualiza golos marcados/sofridos quando disponível.
+const FOURTH={A:"Czechia",B:"Qatar",C:"Haiti",D:"Turkey",E:"Curacao",F:"Tunisia",G:"New Zealand",H:"Saudi Arabia",I:"Iraq"};
+const AI_TABLE={
+  A:[["Mexico",9,6],["South Africa",4,-1],["South Korea",3,-1,2,3],["Czechia",1,-4]],
+  B:[["Switzerland",7,4],["Canada",4,5],["Bosnia & Herzegovina",4,-1,5,6],["Qatar",1,-8]],
+  C:[["Brazil",7,6],["Morocco",7,3],["Scotland",3,-3,1,4],["Haiti",0,-6]],
+  D:[["USA",6,4,8,4],["Australia",4,0,2,2],["Paraguay",4,-2,2,4],["Turkey",3,-2,3,5]],
+  E:[["Germany",6,7],["Ivory Coast",6,null],["Ecuador",4,0,2,2],["Curacao",null,null]],
+  F:[["Netherlands",7,6,10,4],["Japan",5,4,7,3],["Sweden",4,0,7,7],["Tunisia",0,-10,2,12]],
+  G:[["Belgium",5,3],["Egypt",5,2],["Iran",3,0,3,3],["New Zealand",1,-5]],
+  H:[["Spain",7,5],["Cape Verde",3,0],["Uruguay",2,-1,3,4],["Saudi Arabia",1,-4]],
+  I:[["France",9,8],["Norway",null,null],["Senegal",3,2,8,6],["Iraq",null,null]]
+};
+// V/E/D a partir dos pontos (e DG para desfazer o caso ambíguo de 3 pts)
+function wdlFromPts(pts,gd){
+  const m={9:[3,0,0],7:[2,1,0],6:[2,0,1],5:[1,2,0],4:[1,1,1],2:[0,2,1],1:[0,1,2],0:[0,0,3]};
+  if(pts in m) return m[pts];
+  if(pts===3) return (gd!=null&&gd!==0)?[1,0,2]:null;   // 3 pts com DG=0 é ambíguo (1V2D vs 3E)
+  return null;
+}
+// Classificação final de um grupo (A–L) já com golos do live, se houver -> [{team,w,d,l,gf,ga,gd,pts}]
+let STANDINGS=null;   // {A:[{team,...}],...} vindo do ESPN; null até sincronizar
+function groupTable(G){
+  if("JKL".includes(G)){
+    const r=CUR.res[G];
+    return r.order.map(t=>{ const s=r.stats[t]; return {team:t,w:s.w,d:s.d,l:s.l,gf:s.gf,ga:s.ga,gd:s.gd,pts:s.pts}; });
+  }
+  const live=STANDINGS&&STANDINGS[G];
+  return AI_TABLE[G].map((row,i)=>{
+    const [team,pts,gd,gf,ga]=row;
+    const lv=live&&live.find(x=>x.team===team);
+    if(lv) return lv;
+    const wdl=wdlFromPts(pts,gd);
+    return {team, w:wdl?wdl[0]:null, d:wdl?wdl[1]:null, l:wdl?wdl[2]:null,
+            gf:gf??null, ga:ga??(gf!=null&&gd!=null?gf-gd:null), gd:gd??null, pts:pts??null};
+  });
+}
+// Posição (1..4) e registo de uma equipa no seu grupo
+function groupOf(team){
+  for(const G of "ABCDEFGHI".split("")){ if([FIXED[G].w,FIXED[G].r,FIXED[G].t,FOURTH[G]].includes(team)) return G; }
+  for(const G of "JKL".split(""))      { if(GROUPS[G].teams.includes(team)) return G; }
+  return null;
+}
+function teamGroupResult(team){
+  const G=groupOf(team); if(!G) return null;
+  const tbl=groupTable(G); const pos=tbl.findIndex(r=>r.team===team);
+  return {group:G, pos:pos+1, row:tbl[pos]};
+}
+
+/* ============ CALENDÁRIO DO MATA-ELIMINATÓRIAS (oficial FIFA 2026) ============ */
+const SCHED={
+  M73:{d:"2026-06-28",v:"SoFi Stadium",c:"Los Angeles"},        M74:{d:"2026-06-29",v:"Gillette Stadium",c:"Boston"},
+  M75:{d:"2026-06-29",v:"Estádio BBVA",c:"Monterrey"},          M76:{d:"2026-06-29",v:"NRG Stadium",c:"Houston"},
+  M77:{d:"2026-06-30",v:"MetLife Stadium",c:"Nova Iorque/NJ"},  M78:{d:"2026-06-30",v:"AT&T Stadium",c:"Dallas"},
+  M79:{d:"2026-06-30",v:"Estádio Azteca",c:"Cidade do México"}, M80:{d:"2026-07-01",v:"Mercedes-Benz Stadium",c:"Atlanta"},
+  M81:{d:"2026-07-01",v:"Levi's Stadium",c:"São Francisco"},    M82:{d:"2026-07-01",v:"Lumen Field",c:"Seattle"},
+  M83:{d:"2026-07-02",v:"BMO Field",c:"Toronto"},               M84:{d:"2026-07-02",v:"SoFi Stadium",c:"Los Angeles"},
+  M85:{d:"2026-07-02",v:"BC Place",c:"Vancouver"},              M86:{d:"2026-07-03",v:"Hard Rock Stadium",c:"Miami"},
+  M87:{d:"2026-07-03",v:"Arrowhead Stadium",c:"Kansas City"},   M88:{d:"2026-07-03",v:"AT&T Stadium",c:"Dallas"},
+  M89:{d:"2026-07-04",t:"17:00 ET",v:"Lincoln Financial Field",c:"Filadélfia"},
+  M90:{d:"2026-07-04",t:"13:00 ET",v:"NRG Stadium",c:"Houston"},
+  M91:{d:"2026-07-05",t:"16:00 ET",v:"MetLife Stadium",c:"Nova Iorque/NJ"},
+  M92:{d:"2026-07-05",t:"20:00 ET",v:"Estádio Azteca",c:"Cidade do México"},
+  M93:{d:"2026-07-06",t:"15:00 ET",v:"AT&T Stadium",c:"Dallas"},
+  M94:{d:"2026-07-06",t:"20:00 ET",v:"Lumen Field",c:"Seattle"},
+  M95:{d:"2026-07-07",t:"12:00 ET",v:"Mercedes-Benz Stadium",c:"Atlanta"},
+  M96:{d:"2026-07-07",t:"16:00 ET",v:"BC Place",c:"Vancouver"},
+  M97:{d:"2026-07-09",v:"Gillette Stadium",c:"Boston"},         M98:{d:"2026-07-10",v:"SoFi Stadium",c:"Los Angeles"},
+  M99:{d:"2026-07-11",v:"Arrowhead Stadium",c:"Kansas City"},   M100:{d:"2026-07-11",v:"Hard Rock Stadium",c:"Miami"},
+  M101:{d:"2026-07-14",v:"AT&T Stadium",c:"Dallas"},            M102:{d:"2026-07-15",v:"Mercedes-Benz Stadium",c:"Atlanta"},
+  M103:{d:"2026-07-18",v:"Hard Rock Stadium",c:"Miami"},        M104:{d:"2026-07-19",v:"MetLife Stadium",c:"Nova Iorque/NJ"}
+};
+const MONTHS_PT=["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+function schedLabel(id){ const s=SCHED[id]; if(!s) return ""; const dt=new Date(s.d+"T12:00:00Z");
+  const dd=dt.getUTCDate(), mm=MONTHS_PT[dt.getUTCMonth()];
+  return `${dd} ${mm}${s.t?(" · "+s.t):""} · ${s.v}, ${s.c}`; }
+
+// Quem consome o vencedor / o perdedor de cada jogo (para percorrer o caminho de uma equipa)
+const WIN_PARENT={}, LOSE_PARENT={};
+for(const id in LATERDEF){ for(const s of LATERDEF[id]){ const [k,m]=s.split(":");
+  if(k==="win") WIN_PARENT[m]=id; else if(k==="lose") LOSE_PARENT[m]=id; } }
+const ROUND_OF={};
+ROUNDS.forEach(r=>r.ids.forEach(id=>ROUND_OF[id]=r.name));
+const ROUND_OF2={};   // rótulo curto por jogo
+["M73","M74","M75","M76","M77","M78","M79","M80","M81","M82","M83","M84","M85","M86","M87","M88"].forEach(m=>ROUND_OF2[m]="16-avos");
+["M89","M90","M91","M92","M93","M94","M95","M96"].forEach(m=>ROUND_OF2[m]="Oitavos");
+["M97","M98","M99","M100"].forEach(m=>ROUND_OF2[m]="Quartos");
+["M101","M102"].forEach(m=>ROUND_OF2[m]="Meias-finais");
+ROUND_OF2["M103"]="3.º/4.º lugar"; ROUND_OF2["M104"]="Final";
+// ordem de resolução do mata-eliminatórias na simulação
+const SIM_ORDER=["M89","M90","M91","M92","M93","M94","M95","M96","M97","M98","M99","M100","M101","M102","M104","M103"];
+
+/* ============ MODELO DE FORÇA (reutiliza o ranking FIFA / Elo) ============ */
+function eloRating(t){ const r=Math.min(frank(t),40); return (40-r)*25; }
+function pWin(a,b){ return 1/(1+Math.pow(10,(eloRating(b)-eloRating(a))/400)); }   // prob. de 'a' vencer 'b' (jogo a eliminar)
+
+/* ============ SIMULAÇÃO DO PERCURSO DE UMA SELEÇÃO (Monte Carlo) ============ */
+function r32TeamsOf(id){ return ALLDEF[id].map(src=>resolveSrc(src).name); }   // equipas concretas nos 16-avos
+function teamR32Match(team){ for(const id in R32DEF){ if(r32TeamsOf(id).includes(team)) return id; } return null; }
+// Devolve, para 'team': prob. de chegar a cada fase e a distribuição de adversários (condicional a lá chegar)
+function simulateTeam(team, N){
+  const m0=teamR32Match(team); if(!m0) return null;
+  const r32={}; for(const id in R32DEF) r32[id]=r32TeamsOf(id);
+  if(r32[m0].includes(null)) return {m0, incomplete:true};
+  const STAGES=["16-avos","Oitavos","Quartos","Meias-finais","Final","3.º/4.º lugar","Campeão"];
+  const reach={}, opp={}; STAGES.forEach(s=>{reach[s]=0; opp[s]=new Map();});
+  N=N||30000;
+  for(let n=0;n<N;n++){
+    const win={}, lose={};
+    for(const id in R32DEF){ const [a,b]=r32[id]; const w=Math.random()<pWin(a,b)?a:b; win[id]=w; lose[id]=w===a?b:a; }
+    for(const id of SIM_ORDER){
+      const [a,b]=LATERDEF[id].map(s=>{ const [k,m]=s.split(":"); return k==="win"?win[m]:lose[m]; });
+      const w=Math.random()<pWin(a,b)?a:b; win[id]=w; lose[id]=w===a?b:a;
+    }
+    const teamsAt=id=> R32DEF[id]? r32[id]
+      : LATERDEF[id].map(s=>{ const [k,m]=s.split(":"); return k==="win"?win[m]:lose[m]; });
+    // percorre o caminho da equipa enquanto for vencendo
+    let cur=m0;
+    while(true){
+      const [a,b]=teamsAt(cur); const o=a===team?b:a; const rn=ROUND_OF2[cur];
+      reach[rn]++; if(o) opp[rn].set(o,(opp[rn].get(o)||0)+1);
+      if(win[cur]!==team){
+        if((cur==="M101"||cur==="M102")){       // perdeu a meia-final -> joga o 3.º/4.º lugar
+          const m3="M103", [c,d]=teamsAt(m3), o3=c===team?d:c;
+          reach["3.º/4.º lugar"]++; if(o3) opp["3.º/4.º lugar"].set(o3,(opp["3.º/4.º lugar"].get(o3)||0)+1);
+        }
+        break;
+      }
+      if(cur==="M104"){ reach["Campeão"]++; break; }
+      cur=WIN_PARENT[cur];
+    }
+  }
+  return {m0, reach, opp, N, r32Opp:r32[m0].find(t=>t!==team)};
+}
+
+/* ============ CLASSIFICAÇÕES AO VIVO (ESPN) — completa os golos dos grupos A–I ============ */
+// Siglas ESPN -> nome interno (para casar as entradas da classificação)
+const ESPN_ABBR={MEX:"Mexico",RSA:"South Africa",KOR:"South Korea",CZE:"Czechia",
+  SUI:"Switzerland",CAN:"Canada",BIH:"Bosnia & Herzegovina",QAT:"Qatar",
+  BRA:"Brazil",MAR:"Morocco",SCO:"Scotland",HAI:"Haiti",
+  USA:"USA",AUS:"Australia",PAR:"Paraguay",TUR:"Turkey",
+  GER:"Germany",CIV:"Ivory Coast",ECU:"Ecuador",CUW:"Curacao",
+  NED:"Netherlands",JPN:"Japan",SWE:"Sweden",TUN:"Tunisia",
+  BEL:"Belgium",EGY:"Egypt",IRN:"Iran",NZL:"New Zealand",
+  ESP:"Spain",CPV:"Cape Verde",URU:"Uruguay",KSA:"Saudi Arabia",
+  FRA:"France",NOR:"Norway",SEN:"Senegal",IRQ:"Iraq"};
+function statVal(stats,names){ if(!Array.isArray(stats)) return null;
+  for(const s of stats){ if(names.includes(s.name)||names.includes(s.type)){ const v=Number(s.value); if(Number.isFinite(v)) return v; } }
+  return null; }
+function applyStandings(json){
+  try{
+    const groups=json&&(json.children||json.groups); if(!Array.isArray(groups)) return false;
+    const out={};
+    for(const g of groups){
+      const entries=g.standings&&g.standings.entries; if(!Array.isArray(entries)) continue;
+      const rows=[];
+      for(const e of entries){
+        const ab=e.team&&e.team.abbreviation; const team=ESPN_ABBR[ab]; if(!team) continue;
+        const st=e.stats||[];
+        rows.push({team,
+          w:statVal(st,["wins"]), d:statVal(st,["ties","draws"]), l:statVal(st,["losses"]),
+          gf:statVal(st,["pointsFor","goalsFor"]), ga:statVal(st,["pointsAgainst","goalsAgainst"]),
+          gd:statVal(st,["pointDifferential","goalDifference"]), pts:statVal(st,["points"]) });
+      }
+      if(!rows.length) continue;
+      const grp=groupOf(rows[0].team); if(grp&&"ABCDEFGHI".includes(grp)) out[grp]=rows;
+    }
+    if(Object.keys(out).length){ STANDINGS=Object.assign(STANDINGS||{}, out); return true; }
+  }catch(e){}
+  return false;
+}
+async function fetchStandings(){
+  try{
+    const u="https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings";
+    const r=await fetch(u,{cache:"no-store"}); if(!r.ok) return;
+    if(applyStandings(await r.json())){ renderTables(); renderSelecao(); }
+  }catch(e){}
+}
+
 /* ============ ESTADO ============ */
 let SCORES = JSON.parse(JSON.stringify(DEFAULT));      // valores da SIMULAÇÃO (vista "Com este resultado")
 let LSCORE = { J:[null,null], K:[null,null], L:[null,null] };  // placar real/live do ESPN (verdade oficial)
@@ -518,204 +764,126 @@ function matchWinner(id){ const p=PICKS[id]; if(!p) return null; return resolveS
 function matchLoser(id){  const p=PICKS[id]; if(!p) return null; return resolveSrc(ALLDEF[id][p==='a'?1:0]).name; }
 function clearDescendants(id){ const q=[...(CHILDREN[id]||[])]; while(q.length){ const c=q.shift(); if(PICKS[c]!==undefined) delete PICKS[c]; (CHILDREN[c]||[]).forEach(x=>q.push(x)); } }
 
-/* ============ PROBABILIDADES DE ADVERSÁRIO (ponderado por ranking FIFA) ============ */
+/* ============ HORÁRIO DOS JOGOS DE GRUPOS (usado pelo estado live) ============ */
 const KICKOFF = { L:"2026-06-27T21:00:00Z", K:"2026-06-27T23:30:00Z", J:"2026-06-28T02:00:00Z" };
 function koTs(G){ return Date.parse(KICKOFF[G]); }
-function koLabel(G){ return new Date(koTs(G)).toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"}); }
-function groupsByKickoff(){ return "JKL".split("").sort((a,b)=>koTs(a)-koTs(b)); }
-function eloRating(t){ const r=Math.min(frank(t),40); return (40-r)*25; }
-// Modelo de golos (Poisson) — base para a distribuição de resultados, tanto
-// pré-jogo (jogo inteiro a partir de 0-0) como ao vivo (tempo restante a
-// partir do placar atual).
-function fullLambdas(h,a){            // golos esperados de cada equipa num jogo inteiro
-  const Eh=1/(1+Math.pow(10,(eloRating(a)-eloRating(h))/400));
-  const diff=2*Eh-1, base=1.35;      // ~2.7 golos/jogo, repartidos pela força relativa
-  return [base*(1+0.55*diff), base*(1-0.55*diff)];
-}
-function poissonVec(lam,n){           // [P(0), P(1), …, P(n)] golos adicionais
-  const out=[]; let p=Math.exp(-lam);
-  for(let k=0;k<=n;k++){ out.push(p); p=p*lam/(k+1); }
-  return out;
-}
-function gameFrozen(g){ return g.state==="post" || (g.state!=="pre" && (90-g.minute)/90<=0.005); }
-// Lista de até K finais plausíveis de um jogo, com peso, conforme o seu estado:
-//  pre  → jogo inteiro a partir de 0-0
-//  in   → só o tempo que falta, somado ao placar atual (0-0 ao 30' mantém vivos 1-0, 0-1, 1-1…)
-//  post → resultado final congelado
-// Garante sempre (se possível) um final de vitória-casa / empate / vitória-fora, para NÃO
-// perder adversários possíveis mas pouco prováveis; completa por peso até K.
-function gameOutcomes(g, K){
-  const cur = g.state==="pre" ? [0,0] : g.score;
-  if(gameFrozen(g)) return [{s:cur.slice(), w:1}];
-  const f = g.state==="pre" ? 1 : Math.max((90-g.minute)/90, 0.02);
-  let [lh,la]=fullLambdas(g.h,g.a); lh*=f; la*=f;
-  const N=6, ph=poissonVec(lh,N), pa=poissonVec(la,N);
-  const all=[];
-  for(let i=0;i<=N;i++) for(let j=0;j<=N;j++){ const w=ph[i]*pa[j]; if(w<1e-5) continue; all.push({s:[cur[0]+i,cur[1]+j], w}); }
-  all.sort((x,y)=>y.w-x.w);
-  const sign=o=> o.s[0]>o.s[1]?1 : o.s[0]<o.s[1]?-1 : 0;
-  const chosen=[], seen=new Set();
-  for(const want of [1,0,-1]){ const o=all.find(x=>!seen.has(x)&&sign(x)===want); if(o){ chosen.push(o); seen.add(o); } }  // cobre V/E/D
-  for(const o of all){ if(chosen.length>=Math.max(K,3)) break; if(!seen.has(o)){ chosen.push(o); seen.add(o); } }
-  const tot=chosen.reduce((s,o)=>s+o.w,0)||1; chosen.forEach(o=>o.w/=tot);
-  return chosen;
-}
-function r32OppName(src, W){  // nome do adversário de 'src' (ex.: "W:J") nos 16-avos, no mundo W
-  const p=src.split(":"), k=p[0], v=p[1];
-  if(k==="W")  return gWin(v,W);
-  if(k==="RU") return gRun(v,W);
-  if(k==="T"){ const L=W.slotGroup[v]; return L?gThird(L,W):null; }
-  return null;
-}
-function teamOppInWorld(team,G,W){  // adversário nos 16-avos (ou "__OUT__" se não apura)
-  const order=W.res[G].order, pos=order.indexOf(team);
-  if(pos===0){ const m=r32MatchOf("W:"+G);  return m?r32OppName(m.opp,W):null; }
-  if(pos===1){ const m=r32MatchOf("RU:"+G); return m?r32OppName(m.opp,W):null; }
-  if(pos===2){ if(W.qual.includes(G)){ const slot=W.oppOf[G]; return slot?gWin(slot.slice(1),W):null; } return "__OUT__"; }
-  return "__OUT__";
-}
-// Distribuição de adversários por equipa. Cada jogo contribui com a sua lista de
-// finais plausíveis (gameOutcomes), que evolui com o minuto/placar em direto.
-// Enumeramos a combinação dos jogos com poda por peso (beam) para não explodir.
-function opponentDistribution(){
-  const games=[];
-  for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++){
-    const pr=GROUPS[G].rem[mi];
-    const score = finalSc(G,mi) || (finiteSc(LSCORE[G][mi]) ? LSCORE[G][mi].slice() : [0,0]);   // ODDS = final trancado, senão o live oficial
-    games.push({G,mi,h:pr[0],a:pr[1], state:gameState(G,mi), minute:gameMinute(G,mi), score});
-  }
-  // Enumeração COMPLETA (sem beam) de um conjunto pequeno por jogo: escolhemos K por jogo
-  // de modo a caber no orçamento. Beam por peso descartaria adversários possíveis (raros),
-  // por isso preferimos menos finais por jogo, mas considerá-los TODOS.
-  const V=games.filter(g=>!gameFrozen(g)).length;          // jogos ainda por decidir
-  const BUDGET=30000, K=Math.max(3, Math.min(14, Math.floor(Math.pow(BUDGET, 1/Math.max(V,1)))));
-  const outs=games.map(g=>gameOutcomes(g,K));
-  let scen=[{rem:{J:[null,null],K:[null,null],L:[null,null]}, w:1}];
-  for(let gi=0; gi<games.length; gi++){
-    const g=games[gi], ol=outs[gi], next=[];
-    for(const s of scen) for(const o of ol){
-      const w=s.w*o.w; if(w<=0) continue;
-      const rem=JSON.parse(JSON.stringify(s.rem)); rem[g.G][g.mi]=o.s.slice();
-      next.push({rem, w});
-    }
-    scen=next;
-  }
-  const dist={};
-  for(const G of "JKL".split("")) for(const t of GROUPS[G].teams) dist[t]=new Map();
-  let totalW=0;
-  for(const s of scen){
-    const W=computeWorld(s.rem); totalW+=s.w;
-    for(const G of "JKL".split("")) for(const t of GROUPS[G].teams){
-      const opp=teamOppInWorld(t,G,W); const kk = opp==null ? "__TBD__" : opp;
-      dist[t].set(kk, (dist[t].get(kk)||0)+s.w);
-    }
-  }
-  for(const t in dist){ const mp=dist[t]; for(const [kk,v] of mp) mp.set(kk, totalW>0?v/totalW:0); }
-  return dist;
-}
 
 /* ===================== RENDER ===================== */
-function stepper(G,mi,side,val,dis){
-  const d=dis?"disabled":"";
-  return `<div class="stepper${dis?' dis':''}">
-    <button ${d} data-g="${G}" data-m="${mi}" data-s="${side}" data-d="-1" aria-label="menos um golo">−</button>
-    <span class="val">${val}</span>
-    <button ${d} data-g="${G}" data-m="${mi}" data-s="${side}" data-d="1" aria-label="mais um golo">+</button></div>`;
-}
-function r32MatchOf(src){  // encontra o jogo dos 16-avos onde 'src' (ex.: "W:J") joga e devolve o adversário
-  for(const id in R32DEF){ const d=R32DEF[id];
-    if(d[0]===src) return {id,opp:d[1]}; if(d[1]===src) return {id,opp:d[0]}; }
-  return null;
-}
-function oppCell(k){   // conteúdo (bandeira + nome) de um adversário
-  if(k==="__OUT__") return `<span class="nm">não apura</span>`;
-  if(k==="__TBD__") return `<span class="nm">a definir</span>`;
-  return `<span class="f">${fl(k)}</span><span class="nm">${pt(k)}</span>`;
-}
-function oddsBlock(team,G){
-  const mp = ODDS && ODDS[team];
-  if(!mp || !mp.size) return `<div class="qopp"></div>`;
-  const entries=[...mp.entries()].filter(([k,v])=>v>0).sort((a,b)=>b[1]-a[1]);
-  if(!entries.length) return `<div class="qopp"></div>`;
-  // adversário garantido (em qualquer combinação) -> badge à volta
-  if(entries[0][1]>=0.999){
-    const k=entries[0][0], out=k==="__OUT__";
-    return `<div class="qopp"><span class="badge ${out?'outb':''}">${out?'':'✓ '}${oppCell(k)}</span></div>`;
-  }
-  if(VIEW==="result"){   // adversário determinístico com o placar atual
-    const opp=teamOppInWorld(team,G,CUR), k = opp==null ? "__TBD__" : opp, out=k==="__OUT__";
-    return `<div class="qopp"><div class="oddline ${out?'out':''}">${oppCell(k)}</div></div>`;
-  }
-  // VIEW==="prob": distribuição pré-jogo (mostra também hipóteses pouco prováveis)
-  let h=`<div class="qopp">`;
-  for(const [k,v] of entries.filter(([k,v])=>v>=0.005).slice(0,8)){
-    const out=k==="__OUT__";
-    h+=`<div class="oddline ${out?'out':''}">${oppCell(k)}<span class="pct">${Math.round(v*100)}%</span></div>`;
-  }
-  return h+`</div>`;
-}
-function renderInputs(){
-  ODDS=opponentDistribution();
-  document.querySelectorAll(".omode").forEach(b=>b.classList.toggle("active", b.dataset.view===VIEW));
-  let h="";
-  for(const G of groupsByKickoff()){
-    const g=GROUPS[G];
-    h+=`<div class="card"><div class="grp-h"><div class="grp-badge">${G}</div>
-      <div><div class="nm">Grupo ${G}</div><div class="sm">2 jogos em simultâneo</div></div><span class="grp-time">⏱ ${koLabel(G)}</span></div>`;
-    const disp=activeScores();   // valores a mostrar conforme a vista (live ou simulação)
-    for(let mi=0;mi<2;mi++){
-      const home=g.rem[mi][0], away=g.rem[mi][1], sc=disp[G][mi];
-      const key=G+":"+mi, manual=MANUAL.has(key);
-      const finished=gameState(G,mi)==="post";          // jogo terminado -> resultado trancado
-      const editable=VIEW==="result" && manual && !finished;    // só edita os jogos em modo manual e ainda a decorrer
-      // jogo terminado -> selo fixo "TERMINADO"; na simulação alterna live ⇄ manual; nas probabilidades é só indicador
-      const badge = finished
-        ? `<span class="livetog done" title="Jogo terminado — resultado final">✓ TERMINADO</span>`
-        : VIEW==="result"
-          ? `<button class="livetog livebtn${manual?'':' on'}" data-g="${G}" data-m="${mi}" title="${manual?'A definir por ti — tocar para voltar ao live':'A seguir o live — tocar para definir à mão'}">${manual?'✎ MANUAL':'● LIVE'}</button>`
-          : `<span class="livetog on">● LIVE</span>`;
-      h+=`<div class="match2">
-        <div class="tcol h"><span class="tlabel"><span class="flag2">${fl(home)}</span><span class="tn2">${pt(home)}</span></span>${stepper(G,mi,0,sc[0],!editable)}</div>
-        <div class="mmid"><span class="mx">×</span>${badge}</div>
-        <div class="tcol a"><span class="tlabel"><span class="flag2">${fl(away)}</span><span class="tn2">${pt(away)}</span></span>${stepper(G,mi,1,sc[1],!editable)}</div>
-        <div class="oddscell h">${oddsBlock(home,G)}</div>
-        <div class="oddscell a">${oddsBlock(away,G)}</div>
-      </div>`;
-    }
-    h+=`</div>`;
-  }
-  document.getElementById("inputs").innerHTML=h;
-}
+const _n=v=>(v==null?"·":v);
 function renderTables(){
   let h="";
-  for(const G of "JKL".split("")){
-    const r=CUR.res[G];
+  for(const G of "ABCDEFGHIJKL".split("")){
+    const tbl=groupTable(G), qualThird=CUR.qual.includes(G);
     h+=`<div class="card"><div class="grp-h"><div class="grp-badge">${G}</div><div class="nm">Grupo ${G}</div></div>
     <table class="tbl"><thead><tr>
       <th class="l">#</th><th class="l">Equipa</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GM</th><th>GS</th><th>DG</th><th>P</th>
     </tr></thead><tbody>`;
-    r.order.forEach((t,i)=>{
-      const s=r.stats[t]; const pc=i===0?"q1":i===1?"q2":i===2?"q3":"";
+    tbl.forEach((s,i)=>{
+      const t=s.team, pc=i===0?"q1":i===1?"q2":(i===2&&qualThird?"q3":"");
       const por=t===POR?" row-por":"";
+      const J=(s.w!=null&&s.d!=null&&s.l!=null)?(s.w+s.d+s.l):3;
+      const dg=s.gd!=null?((s.gd>=0?'+':'')+s.gd):"·";
       h+=`<tr class="${por.trim()}">
         <td class="l"><span class="pos ${pc}">${i+1}</span></td>
         <td class="l"><span class="tflag">${fl(t)}</span><span class="tname">${pt(t)}</span></td>
-        <td>${s.w+s.d+s.l}</td><td>${s.w}</td><td>${s.d}</td><td>${s.l}</td>
-        <td>${s.gf}</td><td>${s.ga}</td><td>${s.gd>=0?'+':''}${s.gd}</td><td class="pts">${s.pts}</td>
+        <td>${J}</td><td>${_n(s.w)}</td><td>${_n(s.d)}</td><td>${_n(s.l)}</td>
+        <td>${_n(s.gf)}</td><td>${_n(s.ga)}</td><td>${dg}</td><td class="pts">${_n(s.pts)}</td>
       </tr>`;
     });
     h+=`</tbody></table></div>`;
   }
-  document.getElementById("tablesJKL").innerHTML=h;
-  let a="";
-  for(const G of "ABCDEFGHI".split("")){
-    const f=FIXED[G];
-    a+=`<div class="aibox"><div class="gl">Grupo ${G}</div>
-      <div class="ln"><span class="p">1º</span>${fl(f.w)} ${pt(f.w)}</div>
-      <div class="ln"><span class="p">2º</span>${fl(f.r)} ${pt(f.r)}</div>
-      <div class="ln t3"><span class="p">3º</span>${fl(f.t)} ${pt(f.t)}</div></div>`;
+  document.getElementById("tablesAll").innerHTML=h;
+}
+
+/* --- SELEÇÃO: percurso já feito + caminho potencial --- */
+function teamPathMatches(m0){   // jogos que a equipa disputaria em cada ronda (caminho do vencedor)
+  const out=[m0]; let cur=m0;
+  while(WIN_PARENT[cur]){ cur=WIN_PARENT[cur]; out.push(cur); }
+  return out;   // [16-avos, oitavos, quartos, meias, final]
+}
+function oppLinesHTML(map, reachCount){
+  const entries=[...map.entries()].sort((a,b)=>b[1]-a[1]);
+  if(!entries.length||!reachCount) return `<div class="oppmore">—</div>`;
+  const cert=entries.length===1 && entries[0][1]/reachCount>=0.999;
+  let h=`<div class="oppwrap">`, shown=0, rest=0, restp=0;
+  for(const [o,c] of entries){
+    const p=c/reachCount;
+    if(shown>=6 && p<0.03){ rest++; restp+=p; continue; }
+    const pct=p>=0.995?"100%":(p<0.01?"<1%":Math.round(p*100)+"%");
+    const por=o===POR?" por":"";
+    h+=`<div class="oppline${cert?' cert':''}${por}"><span class="of">${fl(o)}</span><span class="on">${pt(o)}</span>
+      <span class="obar"><i style="width:${Math.max(2,Math.round(p*100))}%"></i></span><span class="op">${pct}</span></div>`;
+    shown++;
   }
-  document.getElementById("tablesAI").innerHTML=a;
+  if(rest>0) h+=`<div class="oppmore">+${rest} ${rest===1?'outro adversário':'outros adversários'} · ${Math.round(restp*100)||"<1"}%</div>`;
+  return h+`</div>`;
+}
+function renderSelecao(){
+  const team=document.getElementById("teamSel").value;
+  const box=document.getElementById("teamPath");
+  if(!team){ box.innerHTML=`<div class="pickhint">Escolhe uma seleção para veres o percurso.</div>`; return; }
+  const gr=teamGroupResult(team);
+  const por=team===POR;
+  // hero + percurso de grupos
+  const m0=teamR32Match(team), qualified=!!m0;
+  let recordTxt="";
+  if(gr){ const r=gr.row, rec=(r.w!=null)?`${r.w}V ${r.d}E ${r.l}D`:"";
+    const goals=(r.gf!=null&&r.ga!=null)?` · ${r.gf} GM-${r.ga} GS`:"";
+    const dg=r.gd!=null?` (${r.gd>0?'+':''}${r.gd})`:"";
+    recordTxt=`${rec}${goals}${dg}`; }
+  const thirdMark = gr&&gr.pos===3 ? (CUR.qual.includes(gr.group)?" · melhor 3.º":"") : "";
+  const seed = gr ? `${gr.pos}.º do Grupo ${gr.group}${thirdMark}` : "";
+  let h=`<div class="teamhero ${qualified?'':'out'}"><span class="bigfl">${fl(team)}</span>
+    <div class="meta"><div class="nm ${por?'por':''}">${pt(team)}</div>
+      <div class="gl"><b>${seed}</b>${recordTxt?` · ${recordTxt}`:""}</div></div>
+    <span class="seedtag">${qualified?'NO MATA-ELIMINATÓRIAS':'ELIMINADA'}</span></div>`;
+
+  if(!qualified){
+    h+=`<div class="resultline">Terminou no <span class="wl out">${gr?gr.pos+'.º lugar':'fundo'}</span> do grupo e não se apurou para o mata-eliminatórias.</div>`;
+    box.innerHTML=h; return;
+  }
+
+  const sim=simulateTeam(team, 40000);
+  if(!sim||sim.incomplete){ h+=`<div class="resultline">A aguardar o fecho dos grupos para traçar o caminho…</div>`; box.innerHTML=h; return; }
+  const path=teamPathMatches(m0);
+  const labels=["16-avos","Oitavos","Quartos","Meias-finais","Final"];
+  h+=`<div class="stagewrap">`;
+  labels.forEach((lab,k)=>{
+    const id=path[k]; const rc=sim.reach[lab]||0, p=rc/sim.N;
+    const cls = p>=0.999?"done" : p>0?"reachable" : "gone";
+    const rcls = p>=0.999?"done" : p<=0?"gone":(p>=0.5?"hi":"");
+    const reachTxt = p>=0.999?"garantido" : p<=0?"sem cenários" : (p<0.01?"<1%":Math.round(p*100)+"%");
+    h+=`<div class="stage ${cls}">
+      <div class="sh"><span class="sr">${lab==='16-avos'?'16-avos de final':lab==='Oitavos'?'Oitavos de final':lab==='Quartos'?'Quartos de final':lab}</span>
+        <span class="reach ${rcls}">${k===0?'apurada':('chega '+reachTxt)}</span></div>
+      <div class="when">📅 <span class="v">${schedLabel(id)}</span></div>
+      ${oppLinesHTML(sim.opp[lab], rc)}</div>`;
+  });
+  h+=`</div>`;
+  // campeão
+  const champP=(sim.reach["Campeão"]||0)/sim.N;
+  h+=`<div class="champline"><span class="cup">🏆</span><span class="ct ${por?'por':''}">${pt(team)} campeão</span>
+       <span class="cp">${champP<0.001?'<0,1%':(champP*100).toFixed(champP<0.1?1:0)+"%"}</span></div>`;
+  // 3.º/4.º lugar (se puder lá cair)
+  const tpRc=sim.reach["3.º/4.º lugar"]||0;
+  if(tpRc>0){
+    h+=`<div class="card" style="margin-top:12px"><div class="grp-h"><div class="nm" style="font-size:14px">Se perder a meia-final · disputa do 3.º/4.º lugar</div></div>
+      <div class="when" style="margin:0 0 8px">📅 <span class="v">${schedLabel("M103")}</span></div>
+      ${oppLinesHTML(sim.opp["3.º/4.º lugar"], tpRc)}</div>`;
+  }
+  box.innerHTML=h;
+}
+function buildTeamSelect(){
+  const sel=document.getElementById("teamSel"); if(!sel) return;
+  const prev=sel.value||POR;
+  let h=`<option value="">— escolher —</option>`;
+  for(const G of "ABCDEFGHIJKL".split("")){
+    h+=`<optgroup label="Grupo ${G}">`;
+    for(const r of groupTable(G)) h+=`<option value="${r.team}">${pt(r.team)}</option>`;
+    h+=`</optgroup>`;
+  }
+  sel.innerHTML=h;
+  sel.value=prev;
 }
 function renderThirds(){
   const R=CUR.ranked; let h="";
@@ -791,7 +959,7 @@ function renderKnockout(){
 }
 
 /* ===================== EVENTOS ===================== */
-function scoreChanged(){ PICKS={}; recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout(); saveState(); }
+function scoreChanged(){ PICKS={}; recompute(); renderTables(); renderThirds(); renderKnockout(); buildTeamSelect(); renderSelecao(); saveState(); }
 document.getElementById("knockout").addEventListener("click",e=>{
   const b=e.target.closest("button.koteam"); if(!b||b.disabled) return;
   const id=b.dataset.id, side=b.dataset.side;
@@ -799,27 +967,8 @@ document.getElementById("knockout").addEventListener("click",e=>{
   clearDescendants(id); renderKnockout();
 });
 document.getElementById("btnKoReset").addEventListener("click",()=>{ PICKS={}; renderKnockout(); });
-document.querySelector(".oddsmode").addEventListener("click",e=>{
-  const b=e.target.closest("button[data-view]"); if(!b) return;
-  VIEW=b.dataset.view; saveState();
-  scoreChanged();   // o mundo (tabelas/terceiros/quadro) muda com a vista -> recalcula tudo
-});
-// vista "Com este resultado": selo alterna live ⇄ manual por jogo; steppers só editam em modo manual
-document.getElementById("inputs").addEventListener("click",e=>{
-  if(VIEW!=="result") return;
-  const tg=e.target.closest(".livebtn");
-  if(tg){   // alterna o modo do jogo
-    const G=tg.dataset.g, mi=+tg.dataset.m, key=G+":"+mi;
-    if(MANUAL.has(key)) MANUAL.delete(key);                                 // volta a seguir o live
-    else { SCORES[G][mi]=simScores()[G][mi].slice(); MANUAL.add(key); }     // passa a manual, partindo do valor mostrado
-    scoreChanged(); return;
-  }
-  const b=e.target.closest(".stepper button"); if(!b||b.disabled) return;
-  const G=b.dataset.g, mi=+b.dataset.m, side=+b.dataset.s, d=+b.dataset.d, key=G+":"+mi;
-  if(!MANUAL.has(key)) return;   // segurança: só os jogos em modo manual se editam
-  const sc=SCORES[G][mi]; sc[side]=Math.max(0, sc[side]+d);
-  scoreChanged();
-});
+// seletor de seleção
+document.getElementById("teamSel").addEventListener("change",renderSelecao);
 
 /* tabs */
 document.querySelectorAll(".tab").forEach(tb=>tb.addEventListener("click",()=>{
@@ -917,8 +1066,8 @@ async function fetchLive(manual){
     }
 
     const updated=new Date().toLocaleTimeString("pt-PT",{hour:"2-digit",minute:"2-digit"});
-    // o live só mexe em LSCORE: na simulação só afeta os jogos a decorrer; nos restantes a tua simulação mantém-se
-    if(applyLive({rem})||finalsChanged) scoreChanged(); else renderInputs();   // refresca odds com novo minuto/estado mesmo sem mudança de placar
+    // o live só mexe em LSCORE; quando o placar/estado de J/K/L muda, recalcula todo o mundo
+    if(applyLive({rem})||finalsChanged) scoreChanged();
     const allDone="JKL".split("").every(G=>[0,1].every(mi=>FINAL[G+":"+mi]));
     setLiveStatus(allDone?("terminado · "+updated):("ao vivo · "+updated), allDone?"":"ok");
   }catch(e){ setLiveStatus(manual?"sem ligação — tenta de novo":"sem ligação","warn"); }
@@ -960,9 +1109,12 @@ async function _doRefresh(){
 
 /* ===================== ARRANQUE ===================== */
 loadState();
-recompute(); renderInputs(); renderTables(); renderThirds(); renderKnockout();
+recompute();
+buildTeamSelect();
+const _ts=document.getElementById("teamSel"); if(_ts) _ts.value=POR;   // arranca na seleção da casa
+renderTables(); renderThirds(); renderKnockout(); renderSelecao();
+fetchStandings();                                  // completa os golos dos grupos A–I (ESPN, quando acessível)
 if(LIVE_ENABLED){ fetchLive(false); setInterval(()=>fetchLive(false), 60000); }
-setInterval(renderInputs, 60000); // refresca odds + barreira "a partir da hora de início"
 </script>
 </body>
 </html>

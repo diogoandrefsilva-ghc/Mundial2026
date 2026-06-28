@@ -251,7 +251,7 @@
   <header>
     <div class="topbar"></div>
     <h1>Simulador<span class="y">Mundial 2026</span></h1>
-    <p class="sub">Faltam <b>6 jogos</b> da fase de grupos (J, K e L). Mexe nos resultados e vê como muda o apuramento dos terceiros e todo o quadro a eliminar.</p>
+    <p class="sub" id="subText">Faltam <b>6 jogos</b> da fase de grupos (J, K e L). Mexe nos resultados e vê como muda o apuramento dos terceiros e todo o quadro a eliminar.</p>
   </header>
 
   <nav class="tabs">
@@ -263,7 +263,7 @@
 
   <main>
     <section class="panel active" id="p-jogos">
-      <h2 class="panel-h">Os 6 jogos que faltam</h2>
+      <h2 class="panel-h" id="jogosTitle">Os 6 jogos que faltam</h2>
       <p class="panel-d">Ordenados por hora de início. Sob cada equipa: em <b>Probabilidades</b> vês os possíveis adversários nos playoffs e a chance de cada um (ponderada pelo ranking FIFA; ajusta a partir do início de cada jogo); em <b>Com este resultado</b> cada jogo segue o live (<b>● LIVE</b>); toca no selo para o passares a <b>✎ MANUAL</b> e definires tu o resultado (+/−), e toca outra vez para voltar ao live — vês o adversário que daí sai. Em Probabilidades o placar vem sempre do ESPN — puxa o ecrã para baixo para atualizar.</p>
       <div class="oddsmode">
         <button class="omode" data-view="prob">Probabilidades</button>
@@ -654,7 +654,21 @@ function oddsBlock(team,G){
   }
   return h+`</div>`;
 }
+function updateHeaderCopy(){
+  // nº de jogos da fase de grupos ainda por terminar (dos 6 de J/K/L)
+  let pending=0;
+  for(const G of "JKL".split("")) for(let mi=0;mi<2;mi++) if(gameState(G,mi)!=="post") pending++;
+  const sub=document.getElementById("subText"), title=document.getElementById("jogosTitle");
+  if(pending===0){
+    if(sub) sub.innerHTML="A <b>fase de grupos terminou</b> (J, K e L). Vê o apuramento dos terceiros e todo o quadro a eliminar — e decide os mata-mata.";
+    if(title) title.textContent="Os 6 jogos — todos terminados";
+  }else{
+    if(sub) sub.innerHTML="Falta"+(pending>1?"m":"")+" <b>"+pending+" jogo"+(pending>1?"s":"")+"</b> da fase de grupos (J, K e L). Mexe nos resultados e vê como muda o apuramento dos terceiros e todo o quadro a eliminar.";
+    if(title) title.textContent = pending===6 ? "Os 6 jogos que faltam" : ("Jogos da fase de grupos — falta"+(pending>1?"m":"")+" "+pending);
+  }
+}
 function renderInputs(){
+  updateHeaderCopy();
   ODDS=opponentDistribution();
   document.querySelectorAll(".omode").forEach(b=>b.classList.toggle("active", b.dataset.view===VIEW));
   let h="";
